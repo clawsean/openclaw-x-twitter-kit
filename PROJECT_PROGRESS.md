@@ -1,7 +1,7 @@
 # openclaw-x-twitter-kit — PROJECT_PROGRESS
 
 *Created: 2026-05-23*  
-*Status: v0 scaffolded, locally smoke-tested, ready to publish*
+*Status: v0 published ✅*
 
 ## Purpose
 
@@ -30,6 +30,12 @@ Share the layered X/Twitter setup we built for OpenClaw:
 - `skills/x-twitter-kit/scripts/twitter-doctor.sh`
 - `skills/x-twitter-kit/scripts/xurl-oauth2-auth.sh`
 - Caddy, OpenClaw xAI, and privacy-policy templates.
+
+## Publication
+
+- GitHub: https://github.com/clawSean/openclaw-x-twitter-kit
+- Visibility: public
+- Initial commit: `8f6bbf8` — `Initial OpenClaw X Twitter kit`
 
 ## Validation
 
