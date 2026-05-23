@@ -1,0 +1,12 @@
+# secrets / local auth
+.env
+.env.*
+!.env.example
+*.secret
+*.token
+.xurl
+
+# runtime junk
+.DS_Store
+/tmp/
+*.log

@@ -1,0 +1,12 @@
+# Temporary OAuth callback proxy for xurl on a headless VPS.
+# Add this inside your site block only while running xurl OAuth2 auth,
+# then remove it after authentication succeeds.
+
+example.com {
+  handle /callback* {
+    reverse_proxy 127.0.0.1:8080
+  }
+
+  root * /srv/websites/example.com
+  file_server
+}
