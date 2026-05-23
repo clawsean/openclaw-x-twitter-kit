@@ -66,3 +66,6 @@ Validation after polish:
 
 - `scripts/ci-check.sh` passed locally with ShellCheck installed.
 - Live doctor passed locally with 12 passed / 0 warnings / 0 failed.
+- GitHub Actions CI passed on `d93dec8` and `3207679`.
+- GitHub community profile reports 100% health.
+- Discussions enabled; topics added: `openclaw`, `x-api`, `twitter-api`, `xurl`, `oauth2`, `agents`, `agent-skills`.
