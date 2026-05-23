@@ -71,8 +71,16 @@ if command -v xurl >/dev/null 2>&1; then
   else
     warn "xurl OAuth2 user not detected" "$AUTH_STATUS"
   fi
-  grep -q 'oauth1: ✓' <<<"$AUTH_STATUS" && ok "xurl OAuth1 credential detected" || warn "xurl OAuth1 not detected" "Optional unless posting/user-context OAuth1 is needed"
-  grep -q 'bearer: ✓' <<<"$AUTH_STATUS" && ok "xurl bearer credential detected" || warn "xurl bearer not detected" "Optional if xurl search works via another auth path"
+  if grep -q 'oauth1: ✓' <<<"$AUTH_STATUS"; then
+    ok "xurl OAuth1 credential detected"
+  else
+    warn "xurl OAuth1 not detected" "Optional unless posting/user-context OAuth1 is needed"
+  fi
+  if grep -q 'bearer: ✓' <<<"$AUTH_STATUS"; then
+    ok "xurl bearer credential detected"
+  else
+    warn "xurl bearer not detected" "Optional if xurl search works via another auth path"
+  fi
 
   READ_JSON="$(xurl read "$TWEET_URL" 2>&1)"
   if printf '%s' "$READ_JSON" | json_has_data_object; then ok "xurl exact tweet URL read works"; else fail "xurl exact tweet read failed" "$READ_JSON"; fi

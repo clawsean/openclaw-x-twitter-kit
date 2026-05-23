@@ -49,3 +49,20 @@ Share the layered X/Twitter setup we built for OpenClaw:
 ## Important implementation note
 
 Some xurl setups keep OAuth2 client registration separate from default OAuth1/bearer credentials. In our local setup, default read/search works through `default`, while OAuth2-only bookmark operations require `--app jpop-oauth2`. The kit supports this with `XTK_BOOKMARK_APP`.
+
+## 2026-05-23 — Community polish pass
+
+Research inputs: GitHub community health docs, GitHub security/repository-topic docs, X OAuth2 PKCE docs, npm xurl metadata, OpenClaw local skill docs, and a Perplexity checklist synthesis.
+
+Implemented:
+
+- Community files: `CONTRIBUTING.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, issue templates, PR template.
+- CI: `.github/workflows/ci.yml` plus `scripts/ci-check.sh` for Bash syntax, ShellCheck, skill frontmatter, executable bits, secret-ish scan, and whitespace checks.
+- Docs: `docs/openclaw-install.md`, `docs/oauth.md`, `docs/troubleshooting.md`, and `docs/community-polish-sources.md`.
+- README expanded with audience, docs links, install path, safety model, CI badge, and validation commands.
+- SECURITY expanded with reporting guidance, leak response, and project responsibility boundaries.
+
+Validation after polish:
+
+- `scripts/ci-check.sh` passed locally with ShellCheck installed.
+- Live doctor passed locally with 12 passed / 0 warnings / 0 failed.

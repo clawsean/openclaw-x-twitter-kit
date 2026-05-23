@@ -1,0 +1,43 @@
+name: Bug report
+description: Report a reproducible problem with the kit, scripts, or docs.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste secrets, callback codes, refresh tokens, access tokens, bearer tokens, or `~/.xurl` contents.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke?
+    validations:
+      required: true
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Affected lane
+      options:
+        - xurl OAuth2 / bookmarks
+        - xurl OAuth1 / bearer read-search
+        - direct bearer API
+        - xAI x_search
+        - browser fallback
+        - OpenClaw skill loading
+        - docs/templates
+        - unsure
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, OpenClaw version if known, xurl version, shell, and install method.
+      render: text
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands and redacted output
+      description: Include `scripts/ci-check.sh` or doctor output with secrets and private content removed.
+      render: text

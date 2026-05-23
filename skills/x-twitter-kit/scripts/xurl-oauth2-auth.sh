@@ -53,6 +53,7 @@ SH
 chmod +x "$TMPDIR/bin/xdg-open"
 
 cleanup() {
+  # shellcheck disable=SC2317 # invoked by EXIT trap
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT

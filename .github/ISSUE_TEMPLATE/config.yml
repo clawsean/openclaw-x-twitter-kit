@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions / setup discussion
+    url: https://github.com/clawSean/openclaw-x-twitter-kit/discussions
+    about: Use Discussions for community setup questions and ideas.
