@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/clawSean/openclaw-x-twitter-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/clawSean/openclaw-x-twitter-kit/actions/workflows/ci.yml)
 
-A small OpenClaw-first helper skill + scripts for dependable X/Twitter access using layered backends:
+A small OpenClaw-first helper skill + scripts for dependable X/Twitter access using layered transports and capability checks:
 
-1. **xurl** — primary authenticated X lane for tweet reads, search, bookmarks, timeline, media, and user actions.
-2. **Direct bearer API** — deterministic script/API lane for exact X API calls.
-3. **OpenClaw xAI `x_search`** — broad semantic discovery lane.
+1. **xurl** — primary authenticated X transport for tweet reads, search, bookmarks, timeline, media, and user actions.
+2. **Direct bearer API** — deterministic script/API transport for exact X API calls.
+3. **OpenClaw xAI `x_search`** — broad semantic discovery transport.
 4. **Browser fallback** — last resort for UI-only cases or API-tier blocks.
 
 The kit is designed to be shareable: it ships no secrets and should work for any OpenClaw/VPS user who brings their own X Developer app and credentials.
@@ -18,6 +18,13 @@ The kit is designed to be shareable: it ships no secrets and should work for any
 - Technical friends who can bring their own X Developer app, callback URL, and credentials.
 
 This is a **technical v0 kit**, not a hosted service or one-click consumer installer.
+
+## Design stance
+
+- Route by **capability** first: exact tweet read, search, bookmarks, DMs, posting, media, or broad discovery may require different auth contexts.
+- Treat `xurl` as an external credential adapter. This kit shells out to `xurl`; it does **not** parse, mutate, upload, or own `~/.xurl`.
+- Keep durable Twitter memory/cache layers outside this kit. Pair with local-first tools when you need repeated analysis without repeated live API reads.
+- Keep public/mutating actions approval-gated even when auth is healthy.
 
 ## Contents
 

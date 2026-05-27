@@ -1,5 +1,16 @@
 # Troubleshooting
 
+## Auth is healthy but one operation still fails
+
+Treat this as a **capability mismatch**, not a generic Twitter failure.
+
+- Exact tweet reads, search, bookmarks, DMs, posting, media, and account actions can require different auth contexts/scopes.
+- `xurl auth status` proves credentials exist; it does not prove every surface is available for the selected app.
+- Re-run the failing surface directly with the same app/config the agent will use.
+- Do not inspect or edit `~/.xurl` directly. Shell out to `xurl` and fix credentials through its supported commands.
+
+If the same data will be queried repeatedly, use a local cache/memory layer outside this kit instead of burning live API reads every time.
+
 ## `Unsupported Authentication` on bookmarks
 
 Bookmarks require OAuth2 user context. Retry with the OAuth2 app explicitly:

@@ -69,3 +69,17 @@ Validation after polish:
 - GitHub Actions CI passed on `d93dec8` and `3207679`.
 - GitHub community profile reports 100% health.
 - Discussions enabled; topics added: `openclaw`, `x-api`, `twitter-api`, `xurl`, `oauth2`, `agents`, `agent-skills`.
+
+## 2026-05-26 — Capability/transport design clarification
+
+Prompted by comparing adjacent local-first X tooling, clarified the kit's scope without adding new dependencies:
+
+- Reframed docs from generic “backends/lanes” toward capability-first routing and transport selection.
+- Documented `xurl` as an external adapter boundary: shell out to supported commands; do not inspect, mutate, upload, or own `~/.xurl`.
+- Added a troubleshooting section for capability mismatches where auth is healthy but a specific surface still fails.
+- Kept durable Twitter memory/cache layers explicitly outside this kit while leaving a clean companion-tool seam.
+
+Validation:
+
+- `scripts/ci-check.sh` passed locally.
+- `openclaw skills check` passed with `search-twitter` still visible/eligible.

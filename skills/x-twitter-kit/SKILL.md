@@ -5,20 +5,31 @@ description: Use this when configuring, diagnosing, or operating layered X/Twitt
 
 # X/Twitter Kit
 
-Use this skill to choose the correct X/Twitter backend and avoid mixing credentials, auth contexts, or safety rules.
+Use this skill to choose the correct X/Twitter transport/capability path and avoid mixing credentials, auth contexts, or safety rules.
 
-## Backend selection
+## Capability-first routing
 
-1. **xurl (primary authenticated lane)**
+Pick the operation first, then choose the transport that can perform it safely:
+
+- **Exact tweet URL read** → prefer `xurl`; use direct bearer only for deterministic scripts or when `xurl` is unavailable.
+- **Search / timeline / mentions** → prefer `xurl` for account-aware live reads; use `x_search` for broad semantic discovery.
+- **Bookmarks / likes / DMs / posting / replies** → require OAuth2 user context through `xurl`; verify the selected app before acting.
+- **Repeated analysis / local memory** → use or add a local cache layer outside this kit. Do not keep spending live API reads when durable local state is available.
+- **UI-only or API-tier gaps** → browser fallback, with explicit approval for any public/mutating action.
+
+## Transport selection
+
+1. **xurl (primary authenticated transport)**
    - Use for tweet URL reads, X search, bookmarks, timeline, likes/reposts/follows, media upload, posting/replies, and DMs.
    - Expected healthy state: `xurl auth status` shows an app with OAuth2 user, OAuth1 ✓ when configured, and bearer ✓ when configured.
    - Bookmarks require OAuth2 user context. If OAuth2 client registration lives under a non-default xurl app, use `xurl --app <oauth2-app> bookmarks` or set `XTK_BOOKMARK_APP` for the doctor.
+   - Treat `xurl` as an adapter. Shell out to `xurl`; do not parse, mutate, upload, or take ownership of `~/.xurl`.
 
-2. **Direct bearer API (deterministic script lane)**
+2. **Direct bearer API (deterministic script transport)**
    - Use for exact X API calls from scripts when structured JSON matters.
    - Fetch bearer tokens at runtime from a secret manager or env var. Never log Authorization headers.
 
-3. **OpenClaw/xAI `x_search` (broad discovery lane)**
+3. **OpenClaw/xAI `x_search` (broad discovery transport)**
    - Use for semantic/broad discovery, thread/media-aware search, or when natural language beats X query syntax.
    - Not a replacement for bookmarks, account actions, or posting.
 
