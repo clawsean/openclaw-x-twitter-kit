@@ -210,8 +210,11 @@ while [ "$#" -gt 0 ]; do
     -w|-H)
       shift 2
       ;;
-    -sS)
+    -sS|-L)
       shift
+      ;;
+    --max-time|-A)
+      shift 2
       ;;
     *)
       shift
@@ -220,8 +223,13 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ -z "$out" ]; then
-  printf 'curl fixture expected -o path\n' >&2
-  exit 2
+  if [ "${XTK_TEST_CURL_HTTP_CODE:-200}" = "200" ]; then
+    cat <<'JSON'
+{"results":[{"type":"status","id":"2063297533732962729","created_at":"2026-06-06T16:30:40.000Z","raw_text":{"text":"EdgeWallet test post"},"author":{"screen_name":"edgewallet"},"url":"https://x.com/EdgeWallet/status/2063297533732962729"}]}
+JSON
+  fi
+  printf '\n__HTTP_STATUS__:%s\n' "${XTK_TEST_CURL_HTTP_CODE:-200}"
+  exit 0
 fi
 
 printf '{"data":{"id":"2056872329561710766"}}\n' >"$out"
@@ -263,6 +271,7 @@ new_case_dir() {
   write_config "$dir"
   write_fake_openclaw "$dir/bin"
   write_fake_xurl "$dir/bin"
+  write_fake_curl "$dir/bin"
   printf '%s\n' "$dir"
 }
 
@@ -296,8 +305,9 @@ case_oauth_primary_skip_live() {
     XTK_SKIP_XURL_LIVE=1
   assert_contains "$dir/out" "xAI OAuth auth profile present" "oauth profile detected"
   assert_contains "$dir/out" "xAI API-key fallback absent; OAuth profile is configured as primary" "oauth primary without api key"
+  assert_contains "$dir/out" "Peeper no-credit monitor works" "peeper no-credit smoke"
   assert_contains "$dir/out" "xAI/Grok model smoke works with auth-profile lane" "oauth model smoke"
-  assert_contains "$dir/out" "Summary: 9 passed, 2 warnings, 0 failed" "oauth skip-live summary"
+  assert_contains "$dir/out" "Summary: 10 passed, 2 warnings, 0 failed" "oauth skip-live summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -311,7 +321,7 @@ case_expired_oauth_refresh_smoke() {
     XTK_SKIP_XURL_LIVE=1
   assert_contains "$dir/out" "token is expired/stale; model smoke will attempt refresh" "expired oauth refresh warning"
   assert_contains "$dir/out" "xAI/Grok model smoke works with auth-profile lane" "expired oauth model smoke"
-  assert_contains "$dir/out" "Summary: 8 passed, 3 warnings, 0 failed" "expired oauth summary"
+  assert_contains "$dir/out" "Summary: 9 passed, 3 warnings, 0 failed" "expired oauth summary"
   rm -rf "$dir"
 }
 
@@ -327,7 +337,7 @@ case_api_key_fallback_without_oauth() {
   assert_contains "$dir/out" "xAI OAuth auth profile missing" "missing oauth reported"
   assert_contains "$dir/out" "xAI API-key fallback appears configured (not primary)" "api fallback detected"
   assert_contains "$dir/out" "xAI/Grok model smoke works with API-key fallback lane" "api fallback smoke"
-  assert_contains "$dir/out" "Summary: 8 passed, 3 warnings, 0 failed" "api fallback summary"
+  assert_contains "$dir/out" "Summary: 9 passed, 3 warnings, 0 failed" "api fallback summary"
   rm -rf "$dir"
 }
 
@@ -341,7 +351,7 @@ case_xurl_live_capabilities() {
   assert_contains "$dir/out" "xurl exact tweet URL read works" "xurl read smoke"
   assert_contains "$dir/out" "xurl search works" "xurl search smoke"
   assert_contains "$dir/out" "xurl bookmarks work via app jpop-oauth2" "xurl bookmark app smoke"
-  assert_contains "$dir/out" "Summary: 12 passed, 1 warnings, 0 failed" "xurl live summary"
+  assert_contains "$dir/out" "Summary: 13 passed, 1 warnings, 0 failed" "xurl live summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -358,7 +368,7 @@ case_direct_bearer_success() {
     "XTK_BEARER_OP_REF=op://Sean/Twitter API Key/Bearer Token"
   assert_contains "$dir/out" "legacy direct bearer tweet read works" "direct bearer smoke"
   assert_not_contains "$dir/out" "fake-bearer-token" "direct bearer token redacted"
-  assert_contains "$dir/out" "Summary: 10 passed, 1 warnings, 0 failed" "direct bearer summary"
+  assert_contains "$dir/out" "Summary: 11 passed, 1 warnings, 0 failed" "direct bearer summary"
   rm -rf "$dir"
 }
 
@@ -371,7 +381,7 @@ case_malformed_xai_auth_json() {
     XTK_SKIP_XURL_LIVE=1
   assert_contains "$dir/out" "xAI OAuth auth profile check inconclusive" "malformed xai auth reported inconclusive"
   assert_contains "$dir/out" "xAI/Grok model smoke skipped" "malformed xai auth skips model smoke"
-  assert_contains "$dir/out" "Summary: 6 passed, 5 warnings, 0 failed" "malformed xai auth summary"
+  assert_contains "$dir/out" "Summary: 7 passed, 5 warnings, 0 failed" "malformed xai auth summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -387,7 +397,7 @@ case_missing_openclaw_config() {
     XTK_SKIP_XURL_LIVE=1
   assert_contains "$dir/out" "OpenClaw config not found" "missing config warning"
   assert_contains "$dir/out" "xAI OAuth auth profile present" "missing config still inspects xai auth"
-  assert_contains "$dir/out" "Summary: 8 passed, 3 warnings, 0 failed" "missing config summary"
+  assert_contains "$dir/out" "Summary: 9 passed, 3 warnings, 0 failed" "missing config summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -402,7 +412,7 @@ case_partial_openclaw_config_surfaces() {
     XTK_SKIP_XURL_LIVE=1
   assert_contains "$dir/out" "OpenClaw config is missing some X surfaces" "partial config warning"
   assert_contains "$dir/out" "NO plugins.entries.xai.enabled" "partial config reports xai disabled"
-  assert_contains "$dir/out" "Summary: 8 passed, 3 warnings, 0 failed" "partial config summary"
+  assert_contains "$dir/out" "Summary: 9 passed, 3 warnings, 0 failed" "partial config summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -421,7 +431,7 @@ case_xurl_live_read_failure() {
   pass "xurl live read failure exits nonzero"
   assert_contains "$dir/out" "xurl exact tweet read failed" "xurl read failure reported"
   assert_contains "$dir/out" "xurl search works" "xurl search still smoke-passes after read failure"
-  assert_contains "$dir/out" "Summary: 11 passed, 1 warnings, 1 failed" "xurl read failure summary"
+  assert_contains "$dir/out" "Summary: 12 passed, 1 warnings, 1 failed" "xurl read failure summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -440,7 +450,7 @@ case_direct_bearer_http_failure() {
   assert_contains "$dir/out" "legacy direct bearer tweet read failed" "bearer http failure reported"
   assert_contains "$dir/out" "HTTP 500" "bearer http failure includes status code"
   assert_not_contains "$dir/out" "fake-bearer-token" "bearer http failure does not leak token"
-  assert_contains "$dir/out" "Summary: 9 passed, 2 warnings, 0 failed" "bearer http failure summary"
+  assert_contains "$dir/out" "Summary: 10 passed, 2 warnings, 0 failed" "bearer http failure summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }
@@ -458,7 +468,7 @@ case_api_key_fallback_does_not_leak_secret() {
   assert_contains "$dir/out" "xAI API-key fallback appears configured (not primary)" "fallback detected for leak guard"
   assert_contains "$dir/out" "xAI/Grok model smoke works with API-key fallback lane" "fallback smoke runs for leak guard"
   assert_not_contains "$dir/out" "$canary" "api-key fallback does not leak secret value"
-  assert_contains "$dir/out" "Summary: 8 passed, 3 warnings, 0 failed" "fallback leak-guard summary"
+  assert_contains "$dir/out" "Summary: 9 passed, 3 warnings, 0 failed" "fallback leak-guard summary"
   assert_no_mutating_xurl_calls "$dir"
   rm -rf "$dir"
 }

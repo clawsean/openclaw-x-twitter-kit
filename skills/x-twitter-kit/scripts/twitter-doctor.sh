@@ -6,6 +6,9 @@ SEARCH_QUERY="${XTK_SEARCH_QUERY:-OpenClaw}"
 EXPECTED_USER="${XTK_EXPECTED_X_USERNAME:-}"
 BOOKMARK_APP="${XTK_BOOKMARK_APP:-}"
 BEARER_OP_REF="${XTK_BEARER_OP_REF:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PEEPER_SCRIPT="${XTK_PEEPER_SCRIPT:-$SCRIPT_DIR/peeper.mjs}"
+PEEPER_FIXTURE="${XTK_PEEPER_FIXTURE:-$SCRIPT_DIR/../fixtures/edgewallet-cache.json}"
 CONFIG="${XTK_OPENCLAW_CONFIG:-$HOME/.openclaw/openclaw.json}"
 ENV_FILE="${XTK_OPENCLAW_ENV:-$HOME/.openclaw/.env}"
 XAI_MODEL="${XTK_XAI_MODEL:-xai/grok-4.3}"
@@ -148,6 +151,59 @@ else
 fi
 
 if grep -q 'handle /callback\*' /etc/caddy/Caddyfile 2>/dev/null; then warn "temporary OAuth callback proxy appears present" "Remove it when not actively re-authing"; else ok "no Caddy /callback* proxy detected"; fi
+
+if [ -f "$PEEPER_SCRIPT" ] && command -v node >/dev/null 2>&1; then
+  PEEPER_CACHE="$TMP_ROOT/peeper-cache.json"
+  [ -f "$PEEPER_FIXTURE" ] && cp "$PEEPER_FIXTURE" "$PEEPER_CACHE"
+  if node "$PEEPER_SCRIPT" --limit 1 --json --cache "$PEEPER_CACHE" >"$TMP_ROOT/peeper.json" 2>"$TMP_ROOT/peeper.err"; then
+    PEEPER_STATUS="$(python3 - "$TMP_ROOT/peeper.json" <<'PY'
+import json
+import sys
+
+try:
+    data = json.load(open(sys.argv[1]))
+except Exception as exc:
+    print(f"BAD|could not parse Peeper output: {exc}")
+    raise SystemExit(0)
+
+if data.get("authUsed") or data.get("xApiUsed") or data.get("xAiUsed"):
+    print("PAID|Peeper reported an auth, X API, or xAI path")
+    raise SystemExit(0)
+
+tweets = data.get("tweets") or []
+tweet_id = tweets[0].get("id") if tweets and isinstance(tweets[0], dict) else ""
+if not tweet_id:
+    print("BAD|Peeper returned no tweet IDs")
+elif data.get("stale"):
+    print(f"CACHE|{tweet_id}")
+else:
+    print(f"LIVE|{tweet_id}")
+PY
+)"
+    PEEPER_STATE="${PEEPER_STATUS%%|*}"
+    PEEPER_DETAIL="${PEEPER_STATUS#*|}"
+    case "$PEEPER_STATE" in
+      LIVE)
+        ok "Peeper no-credit monitor works via public FxTwitter source (${PEEPER_DETAIL})"
+        ;;
+      CACHE)
+        ok "Peeper no-credit monitor works via cache fallback (${PEEPER_DETAIL})"
+        ;;
+      PAID)
+        fail "Peeper smoke used a paid/auth path" "$PEEPER_DETAIL"
+        ;;
+      *)
+        warn "Peeper smoke inconclusive" "$PEEPER_DETAIL"
+        ;;
+    esac
+  else
+    warn "Peeper smoke failed" "$(cat "$TMP_ROOT/peeper.err" 2>/dev/null)"
+  fi
+elif [ ! -f "$PEEPER_SCRIPT" ]; then
+  warn "Peeper script not bundled with this skill install" "$PEEPER_SCRIPT"
+else
+  warn "Peeper smoke skipped" "Node.js is required for scripts/peeper.mjs"
+fi
 
 if command -v xurl >/dev/null 2>&1; then
   AUTH_STATUS="$(xurl auth status 2>&1 | strip_ansi)"

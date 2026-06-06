@@ -170,3 +170,32 @@ Validation:
 
 - `scripts/ci-check.sh` passed locally.
 - `openclaw skills check` passed with `search-twitter` still visible/eligible.
+
+## 2026-06-06 — Bundle Peeper into the X/Twitter Kit
+
+Prompted by JPop's product review: Peeper should remain published as a small
+standalone repo, but the Twitter kit should include it so users get the
+no-credit known-account monitor with the main install.
+
+Decision:
+
+- Public-facing name is **X/Twitter Kit**; keep the repository slug
+  `openclaw-x-twitter-kit` for discoverability and OpenClaw context.
+- Bundle Peeper in the kit as the known-public-account monitoring transport.
+- Keep `clawSean/peeper` as a standalone/direct-use repo with a callback to the
+  fuller kit.
+- Do not add a separate npm dependency yet; Peeper is dependency-free Node +
+  `curl`, so vendoring keeps the install one-step and avoids duplicate package
+  resolution.
+- Skill Reef should index/pointer the kit, not house a second source copy.
+
+Implemented:
+
+- Added `skills/x-twitter-kit/scripts/peeper.mjs` and a cache fixture.
+- Updated README/SKILL/install/troubleshooting docs around job-based routing:
+  known-account monitoring, broad search, exact/account reads, approved actions,
+  and company/brand account separation.
+- Updated `twitter-doctor.sh` so it reports Peeper readiness and proves no X API,
+  X OAuth, or xAI path is used.
+- Updated offline fake-command tests so Peeper is covered without live X/xAI
+  calls.

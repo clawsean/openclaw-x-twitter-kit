@@ -11,3 +11,5 @@ skills/*/LOCAL_DEFAULTS.md
 .DS_Store
 /tmp/
 *.log
+.*-seen.json
+.*-cache.json

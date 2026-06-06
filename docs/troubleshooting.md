@@ -9,7 +9,27 @@ Treat this as a **capability mismatch**, not a generic Twitter failure.
 - Re-run the failing surface directly with the same app/config the agent will use.
 - Do not inspect or edit `~/.xurl` directly. Shell out to `xurl` and fix credentials through its supported commands.
 
-If the same data will be queried repeatedly, use a local cache/memory layer outside this kit instead of burning live API reads every time.
+If the same public account will be queried repeatedly, use bundled Peeper first
+instead of burning live X API or xAI reads:
+
+```bash
+node skills/x-twitter-kit/scripts/peeper.mjs --handle edgewallet --watch --interval 61
+```
+
+For broader repeated analysis, keep a project-local cache/memory layer outside
+the skill itself.
+
+## Peeper returns stale cache or public endpoint errors
+
+Peeper uses unofficial public profile endpoints. A temporary `429`, `403`, or
+parse failure means the public source changed or rate-limited the request; it
+does not mean X API/xAI credentials are missing.
+
+- Keep polling at 61 seconds or slower.
+- Let cache fallback carry short outages.
+- Try `--source syndication` if the default FxTwitter source is unavailable.
+- Do not "fix" Peeper by adding X OAuth, X API bearer, or xAI search to the
+  polling path. Authenticated actions belong in a separate approved hook.
 
 ## `Unsupported Authentication` on bookmarks
 

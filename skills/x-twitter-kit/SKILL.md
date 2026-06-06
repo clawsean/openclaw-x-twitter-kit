@@ -1,6 +1,6 @@
 ---
 name: x-twitter-kit
-description: Use this single agent-facing Twitter/X kit when searching, reading, configuring, diagnosing, or operating X/Twitter access in OpenClaw: auth-profile-backed xAI x_search, xurl OAuth1/OAuth2/bearer, direct X API scripts, bookmark access, or X posting safety.
+description: Use this single agent-facing Twitter/X kit when monitoring known public accounts with Peeper, searching/researching through xAI x_search, reading exact tweets with xurl, configuring OAuth/bearer access, diagnosing capability, or handling X posting safety.
 ---
 
 # X/Twitter Kit
@@ -32,33 +32,53 @@ it.
 
 Pick the operation first, then choose the transport that can perform it safely:
 
+- **Known public-account monitoring** → use bundled Peeper (`scripts/peeper.mjs`) first. It polls public profile endpoints with `curl`, local seen-state, and cache fallback without X API bearer tokens, X OAuth login, xAI/Grok credits, or a paid RSS bridge.
 - **Ordinary X/Twitter search, research, summaries, and cited discovery** → prefer OpenClaw/xAI `x_search` through the signed-in xAI/Grok auth profile.
 - **Exact tweet URL or tweet ID read** → prefer `xurl read <url-or-id>`; use direct bearer only for deterministic scripts or when `xurl` is unavailable.
 - **Timeline / mentions / account-aware reads** → prefer `xurl`, because these depend on user/account context rather than broad semantic search.
 - **Bookmarks / likes / DMs / posting / replies** → require OAuth2 user context through `xurl`; verify the selected app before acting.
-- **Repeated analysis / local memory** → use or add a local cache layer outside this kit. Do not keep spending live API reads when durable local state is available.
+- **Repeated analysis / local memory** → use Peeper's known-account cache path where it fits, or add a project-local cache layer outside this kit. Do not keep spending live API reads when durable local state is available.
 - **UI-only or API-tier gaps** → browser fallback, with explicit approval for any public/mutating action.
+
+Access context:
+
+- No X account/API/Grok access can still use Peeper for known public accounts.
+- Grok/SuperGrok or xAI auth profiles help with broad X search/research through
+  `x_search`; they do not grant bookmarks, timelines, metrics, or actions.
+- X account + xurl OAuth/developer-app setup enables exact/account-aware reads
+  and approved actions, subject to X API tier/scopes/spend caps.
+- Company/brand accounts should not be connected directly unless that is an
+  explicit policy decision. Prefer Peeper for monitoring and a sandbox/service X
+  account for approved actions.
 
 ## Transport selection
 
-1. **OpenClaw/xAI `x_search` (primary search/research transport)**
+1. **Peeper (primary known-public-account monitor)**
+   - Use for "watch @somehandle", "tell me when this account posts", no-credit polling, and known-account monitors where tweet IDs are enough.
+   - Run one-shot checks with `node scripts/peeper.mjs --handle edgewallet --limit 5 --json`.
+   - Run watch mode with `node scripts/peeper.mjs --handle edgewallet --watch --interval 61`.
+   - Peeper intentionally avoids X API bearer, X OAuth, xAI/Grok, and paid RSS bridges.
+   - Peeper endpoints are unofficial/undocumented. Keep polling at 61 seconds or slower, rely on local cache, and back off rather than increasing frequency if the public source rate-limits.
+   - Any Like, repost, reply, bookmark, DM, follow, or post action must be a separate approved `xurl` action or standing policy.
+
+2. **OpenClaw/xAI `x_search` (primary search/research transport)**
    - Use for ordinary "search Twitter/X", broad semantic discovery, thread/media-aware search, and find/summarize/cite workflows.
    - Preferred auth is OpenClaw's signed-in xAI/Grok OAuth profile from auth profiles. Check with `openclaw models auth list --provider xai`.
    - Auth fallback order should be OAuth profile first, then `XAI_API_KEY`, then `plugins.entries.xai.config.webSearch.apiKey` only when OAuth is unavailable.
    - Not a replacement for bookmarks, account actions, posting, metrics, or paginated structured ingestion.
 
-2. **xurl (primary authenticated account transport)**
+3. **xurl (primary authenticated account transport)**
    - Use for tweet URL reads, bookmarks, timeline, likes/reposts/follows, media upload, posting/replies, DMs, and account-aware searches/reads.
    - `xurl search` may appear in diagnostics/tests, but it is not the default route for ordinary broad search or research.
    - Expected healthy state: `xurl auth status` shows an app with OAuth2 user, OAuth1 ✓ when configured, and bearer ✓ when configured.
    - Bookmarks require OAuth2 user context. If OAuth2 client registration lives under a non-default xurl app, use `xurl --app <oauth2-app> bookmarks` or set `XTK_BOOKMARK_APP` for the doctor.
    - Treat `xurl` as an adapter. Shell out to `xurl`; do not parse, mutate, upload, or take ownership of `~/.xurl`.
 
-3. **Direct bearer API (deterministic script transport)**
+4. **Direct bearer API (deterministic script transport)**
    - Use for exact X API calls from scripts when structured JSON, metrics, pagination, or compatibility with older scripts matters.
    - Fetch bearer tokens at runtime from a secret manager or env var. Never log Authorization headers.
 
-4. **Browser fallback (last resort)**
+5. **Browser fallback (last resort)**
    - Use only for UI-only cases or API-tier blocks.
    - Public/mutating actions still need explicit approval.
 
@@ -111,6 +131,7 @@ Useful environment variables:
 - `XTK_SKIP_XURL_LIVE` — set to `1` to skip live xurl read/search/bookmark checks when X API credits are depleted.
 - `XTK_BOOKMARK_APP` — optional xurl app for OAuth2-only bookmark checks.
 - `XTK_BEARER_OP_REF` — optional 1Password ref for legacy direct bearer check.
+- `XTK_PEEPER_SCRIPT` / `XTK_PEEPER_FIXTURE` — optional override paths for the bundled Peeper smoke.
 - `XTK_XAI_MODEL` — xAI/Grok model for the auth-profile smoke, default `xai/grok-4.3`.
 - `XTK_OPENCLAW_CONFIG` / `XTK_OPENCLAW_ENV` — optional OpenClaw config/env paths.
 

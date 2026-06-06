@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Rename the public-facing docs title to "X/Twitter Kit" while keeping the
+  searchable repository slug.
+- Bundle Peeper as the no-credit known-account monitoring transport, including
+  `scripts/peeper.mjs`, a cache fixture, doctor smoke coverage, and offline CI
+  coverage that proves no X API, X OAuth, or xAI path is used.
+- Add job-based routing guidance for known-account monitoring, broad X search,
+  exact/account-aware reads, approved actions, and company/brand account
+  separation.
 - Prefer OpenClaw/xAI `x_search` through signed-in Grok OAuth auth profiles for ordinary X/Twitter search and research.
 - Narrow xurl/direct bearer guidance to exact/account/structured X API work.
 - Update the doctor to inspect xAI auth profiles and treat `XAI_API_KEY` as fallback auth.

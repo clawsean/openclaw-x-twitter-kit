@@ -1,6 +1,9 @@
-# OpenClaw install notes
+# X/Twitter Kit install notes
 
 OpenClaw loads AgentSkills-compatible folders containing `SKILL.md`. The most direct install path is to copy or symlink this repo's skill folder into your OpenClaw workspace.
+
+The installed skill includes Peeper for no-credit known-account monitoring, so
+there is no separate Peeper dependency to install for the basic watcher path.
 
 ## Option A: copy into a workspace
 
@@ -48,6 +51,8 @@ OpenClaw docs note that workspace skills take highest precedence, while `skills.
 
 ```bash
 cd /path/to/openclaw-x-twitter-kit
+node skills/x-twitter-kit/scripts/peeper.mjs --handle edgewallet --limit 1 --json
+
 XTK_EXPECTED_X_USERNAME=your_x_handle \
 XTK_BOOKMARK_APP=default \
 skills/x-twitter-kit/scripts/twitter-doctor.sh
