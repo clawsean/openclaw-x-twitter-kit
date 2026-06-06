@@ -27,20 +27,21 @@ This is a **technical v0 kit**, not a hosted service or one-click consumer insta
 - Keep durable Twitter memory/cache layers outside this kit. Pair with local-first tools when you need repeated analysis without repeated live API reads.
 - Keep public/mutating actions approval-gated even when auth is healthy.
 
-## Skill ownership model
+## Skill model
 
-This repo owns the portable setup, diagnostics, templates, and test matrix.
+This repo owns the single agent-facing Twitter/X skill plus the portable setup,
+diagnostics, templates, and test matrix.
 
 In a running OpenClaw workspace, keep responsibilities split:
 
-- A host-specific search skill owns agent intent routing and local auth
-  expectations.
-- The bundled `xurl` skill owns raw `xurl` command mechanics.
-- This `x-twitter-kit` skill/repo owns shareable setup, doctor scripts, and
-  offline/online proof.
+- `x-twitter-kit` owns agent intent routing, setup, diagnostics, and proof.
+- The bundled `xurl` skill owns raw `xurl` command mechanics only.
+- Optional host-specific account names, secret refs, and standing policies live
+  in a local untracked `LOCAL_DEFAULTS.md` beside the installed skill.
 
-Do not copy host-specific secrets, profile names, or one-off account assumptions
-into this public kit.
+Do not keep a separate host-specific Twitter/search skill active for the same
+workspace. Do not copy host-specific secrets, profile names, or one-off account
+assumptions into this public kit.
 
 ## Contents
 
@@ -52,6 +53,7 @@ skills/x-twitter-kit/
 │   └── xurl-oauth2-auth.sh
 └── templates/
     ├── Caddyfile.callback.example
+    ├── LOCAL_DEFAULTS.example.md
     ├── openclaw-xai-config.patch.json5
     └── privacy-policy-x-oauth.md
 ```
@@ -119,6 +121,16 @@ Additional docs:
    ```
 
    Or configure `skills.load.extraDirs` to point at this repo's `skills` directory. See [OpenClaw install notes](docs/openclaw-install.md).
+
+7. Optional: add local host defaults:
+
+   ```bash
+   cp skills/x-twitter-kit/templates/LOCAL_DEFAULTS.example.md \
+     ~/.openclaw/workspace/skills/x-twitter-kit/LOCAL_DEFAULTS.md
+   ```
+
+   Edit the local copy with your expected auth profile names, xurl username,
+   secret refs, and standing policies. Do not commit secrets or token values.
 
 ## Safety model
 

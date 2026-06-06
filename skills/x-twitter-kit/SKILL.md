@@ -1,27 +1,39 @@
 ---
 name: x-twitter-kit
-description: Use this when configuring, diagnosing, or operating layered X/Twitter access in OpenClaw: auth-profile-backed xAI x_search, xurl OAuth1/OAuth2/bearer, direct X API scripts, bookmark access, or X posting safety.
+description: Use this single agent-facing Twitter/X kit when searching, reading, configuring, diagnosing, or operating X/Twitter access in OpenClaw: auth-profile-backed xAI x_search, xurl OAuth1/OAuth2/bearer, direct X API scripts, bookmark access, or X posting safety.
 ---
 
 # X/Twitter Kit
 
 Use this skill to choose the correct X/Twitter transport/capability path and avoid mixing credentials, auth contexts, or safety rules.
 
-## Relationship to Host Skills
+## Single Skill Rule
 
-This shareable kit owns setup, diagnostics, templates, and proof. If a workspace
-also has a host-specific Twitter/search skill, let that skill own agent intent
-routing, local account expectations, and chat reporting rules.
+This is the one agent-facing Twitter/X skill. Do not keep a separate
+host-specific Twitter/search skill active for the same workspace; put local
+account expectations and standing policies in `LOCAL_DEFAULTS.md` beside this
+file instead.
 
-Use the bundled `xurl` skill for raw command mechanics. This kit should not
-duplicate a full `xurl` manual or contain host-specific secrets/profile names.
+Use the bundled `xurl` skill only for raw command mechanics. `xurl` is a
+dependency/mechanics reference, not a second Twitter routing policy.
+
+## Local Defaults
+
+If `LOCAL_DEFAULTS.md` exists in this skill directory, read it after this file
+before performing Twitter/X work. It may define local auth profile names,
+expected xurl usernames, secret references, reporting preferences, or standing
+approval policies.
+
+Keep `LOCAL_DEFAULTS.md` local and out of public repos. Do not put tokens,
+OAuth callback codes, access tokens, refresh tokens, or bearer token values in
+it.
 
 ## Capability-first routing
 
 Pick the operation first, then choose the transport that can perform it safely:
 
 - **Ordinary X/Twitter search, research, summaries, and cited discovery** → prefer OpenClaw/xAI `x_search` through the signed-in xAI/Grok auth profile.
-- **Exact tweet URL read** → prefer `xurl`; use direct bearer only for deterministic scripts or when `xurl` is unavailable.
+- **Exact tweet URL or tweet ID read** → prefer `xurl read <url-or-id>`; use direct bearer only for deterministic scripts or when `xurl` is unavailable.
 - **Timeline / mentions / account-aware reads** → prefer `xurl`, because these depend on user/account context rather than broad semantic search.
 - **Bookmarks / likes / DMs / posting / replies** → require OAuth2 user context through `xurl`; verify the selected app before acting.
 - **Repeated analysis / local memory** → use or add a local cache layer outside this kit. Do not keep spending live API reads when durable local state is available.
@@ -36,7 +48,8 @@ Pick the operation first, then choose the transport that can perform it safely:
    - Not a replacement for bookmarks, account actions, posting, metrics, or paginated structured ingestion.
 
 2. **xurl (primary authenticated account transport)**
-   - Use for tweet URL reads, X search, bookmarks, timeline, likes/reposts/follows, media upload, posting/replies, and DMs.
+   - Use for tweet URL reads, bookmarks, timeline, likes/reposts/follows, media upload, posting/replies, DMs, and account-aware searches/reads.
+   - `xurl search` may appear in diagnostics/tests, but it is not the default route for ordinary broad search or research.
    - Expected healthy state: `xurl auth status` shows an app with OAuth2 user, OAuth1 ✓ when configured, and bearer ✓ when configured.
    - Bookmarks require OAuth2 user context. If OAuth2 client registration lives under a non-default xurl app, use `xurl --app <oauth2-app> bookmarks` or set `XTK_BOOKMARK_APP` for the doctor.
    - Treat `xurl` as an adapter. Shell out to `xurl`; do not parse, mutate, upload, or take ownership of `~/.xurl`.
@@ -56,6 +69,31 @@ Pick the operation first, then choose the transport that can perform it safely:
 - Do not use verbose API logging around OAuth or Authorization headers.
 - Public/mutating actions require clear user intent and explicit approval unless there is a separate standing policy.
 - Safe reads: tweet URL read, search, timeline/bookmark listing. Mutations: post, reply, delete, DM send, follow/unfollow, block/mute, bookmark add/remove.
+
+## Reply-context priority
+
+If the user triggers a Twitter/X search as a reply to an earlier chat message,
+treat the replied-to message as the primary context. Use it to derive search
+queries, usernames, hashtags, tweet URLs, and pronouns like "it" or "that". If
+the replied-to text is not available, ask the user to paste it.
+
+## Reporting tweets
+
+When mentioning a specific tweet, include a clickable anchored link instead of
+a bare URL line:
+
+```markdown
+[source](https://x.com/i/web/status/<TWEET_ID>)
+```
+
+If the author username is reliable, this is also fine:
+
+```markdown
+[tweet](https://x.com/<username>/status/<TWEET_ID>)
+```
+
+If the tweet ID is unavailable or uncertain, say so instead of fabricating a
+link.
 
 ## Diagnostics
 

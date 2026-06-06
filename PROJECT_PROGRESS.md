@@ -110,29 +110,32 @@ Safety:
 - Live failures are expected to be meaningful external-state signals: auth,
   subscription, X API credits, or upstream service availability.
 
-## 2026-06-06 — Skill ownership cleanup
+## 2026-06-06 — Single active Twitter/X skill cleanup
 
 Prompted by JPop noticing redundancy between the live `search-twitter` skill,
 the bundled `xurl` skill, and this public kit.
 
 Decision:
 
-- Host-specific Twitter/search skills own agent intent routing, local account
-  expectations, chat reporting, and any standing policies.
-- The bundled `xurl` skill owns raw `xurl` CLI mechanics and command syntax.
-- This public `x-twitter-kit` owns portable setup, diagnostics, templates,
-  offline capability tests, and optional online non-mutating proof.
+- `x-twitter-kit` is the one agent-facing Twitter/X skill for routing, setup,
+  diagnostics, templates, offline capability tests, and optional online
+  non-mutating proof.
+- Host-specific account expectations, secret refs, chat reporting preferences,
+  and standing policies belong in a local untracked `LOCAL_DEFAULTS.md` beside
+  the installed `x-twitter-kit` skill.
+- The bundled `xurl` skill remains a raw CLI mechanics dependency only, not a
+  second Twitter routing policy.
+- `search-twitter` should not remain active in the same workspace.
 
 Implemented:
 
-- Slimmed the live `skills/search-twitter/SKILL.md` into a routing-policy layer
-  and removed duplicated direct API helper examples.
-- Tightened `skills/search-twitter/test.sh` so future drift is caught: xAI/Grok
-  OAuth `x_search` first for ordinary research, `xurl read` first for exact
-  URLs/IDs, direct bearer only as fallback/script lane, and public-kit pointers
-  for diagnostics/tests.
-- Added public-kit docs clarifying that `x-twitter-kit` should not absorb
-  host-specific secrets/profile names or duplicate a full `xurl` manual.
+- Added the single-skill rule to `skills/x-twitter-kit/SKILL.md`.
+- Added `LOCAL_DEFAULTS.md` loading guidance plus
+  `templates/LOCAL_DEFAULTS.example.md`.
+- Updated README/install docs/changelog so users install one Twitter/X skill and
+  keep host-specific details local.
+- Installed `x-twitter-kit` as Sean's active workspace Twitter/X skill and
+  retired the old live `search-twitter` skill from active loading.
 
 ## 2026-05-23 — Community polish pass
 

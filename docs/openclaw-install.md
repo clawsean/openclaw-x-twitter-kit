@@ -11,10 +11,20 @@ cp -R openclaw-x-twitter-kit/skills/x-twitter-kit ~/.openclaw/workspace/skills/
 
 Start a new OpenClaw turn/session so the skills snapshot refreshes, then ask the agent to use the `x-twitter-kit` skill.
 
-If your workspace already has a host-specific Twitter/search skill, keep that
-skill as the user-facing routing policy and use this kit for setup,
-diagnostics, and proof. Do not copy host-specific account names, secret refs, or
-standing action policies into this public skill.
+Do not keep a separate host-specific Twitter/search skill active for the same
+workspace. `x-twitter-kit` should be the one agent-facing Twitter/X skill.
+
+For local account expectations and standing policies, create an untracked local
+defaults file:
+
+```bash
+cp ~/.openclaw/workspace/skills/x-twitter-kit/templates/LOCAL_DEFAULTS.example.md \
+  ~/.openclaw/workspace/skills/x-twitter-kit/LOCAL_DEFAULTS.md
+```
+
+Edit the local copy with profile names, expected usernames, secret refs, and
+standing policies. Do not store token values, OAuth callback codes, access
+tokens, refresh tokens, or bearer token values in that file.
 
 ## Option B: load from this repo as an extra skill directory
 

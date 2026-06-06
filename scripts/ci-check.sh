@@ -31,6 +31,26 @@ for path in Path('skills').glob('*/SKILL.md'):
     print(f'ok {path}')
 PY
 
+printf '\n== single skill contract ==\n'
+python3 - <<'PY'
+import re
+from pathlib import Path
+skill = Path('skills/x-twitter-kit/SKILL.md').read_text()
+readme = Path('README.md').read_text()
+template = Path('skills/x-twitter-kit/templates/LOCAL_DEFAULTS.example.md')
+checks = {
+    'SKILL.md declares single-skill rule': re.search(r'^## Single[- ]Skill Rule$', skill, re.M),
+    'SKILL.md references LOCAL_DEFAULTS.md': 'LOCAL_DEFAULTS.md' in skill,
+    'README warns against separate host-specific skill': re.search(r'Do not keep a separate host-specific (Twitter|X/Twitter)[/-]?search skill active', readme),
+    'LOCAL_DEFAULTS example exists': template.is_file(),
+}
+failed = [name for name, ok in checks.items() if not ok]
+if failed:
+    raise SystemExit('\n'.join(f'FAIL {name}' for name in failed))
+for name in checks:
+    print(f'ok {name}')
+PY
+
 printf '\n== executable bits ==\n'
 python3 - <<'PY'
 import os

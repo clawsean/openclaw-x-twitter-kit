@@ -5,6 +5,7 @@
 *.secret
 *.token
 .xurl
+skills/*/LOCAL_DEFAULTS.md
 
 # runtime junk
 .DS_Store
