@@ -53,6 +53,9 @@ if grep -RInE \
 fi
 printf 'ok no obvious secrets\n'
 
+printf '\n== offline capability tests ==\n'
+scripts/test.sh
+
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   printf '\n== whitespace check ==\n'
   git diff --check

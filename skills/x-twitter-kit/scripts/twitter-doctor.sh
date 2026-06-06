@@ -17,6 +17,15 @@ PASS=0
 FAIL=0
 WARN=0
 XAI_OAUTH_AVAILABLE=0
+XAI_OAUTH_PRESENT=0
+XAI_API_KEY_FALLBACK_AVAILABLE=0
+TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/xtk-doctor.XXXXXX")"
+
+cleanup() {
+  unset XAI_API_KEY
+  rm -rf "$TMP_ROOT"
+}
+trap cleanup EXIT
 
 strip_ansi() { sed -E 's/\x1B\[[0-9;?]*[A-Za-z]//g'; }
 ok() { printf '✅ %s\n' "$1"; PASS=$((PASS+1)); }
@@ -45,7 +54,7 @@ printf '=========================================\n'
 if command -v xurl >/dev/null 2>&1; then ok "xurl binary present ($(command -v xurl))"; else fail "xurl binary missing" "Install @xdevplatform/xurl"; fi
 
 if [ -f "$CONFIG" ]; then
-  python3 - "$CONFIG" <<'PY' >/tmp/xtk-doctor-config.out 2>/tmp/xtk-doctor-config.err
+  python3 - "$CONFIG" <<'PY' >"$TMP_ROOT/config.out" 2>"$TMP_ROOT/config.err"
 import json, sys
 cfg=json.load(open(sys.argv[1]))
 checks={
@@ -58,19 +67,20 @@ for name, passed in checks.items():
     print(('OK ' if passed else 'NO ') + name)
 sys.exit(0 if all(checks.values()) else 1)
 PY
-  if grep -q '^NO ' /tmp/xtk-doctor-config.out; then warn "OpenClaw config is missing some X surfaces" "$(cat /tmp/xtk-doctor-config.out)"; else ok "OpenClaw config enables xurl + xAI x_search surfaces"; fi
+  if grep -q '^NO ' "$TMP_ROOT/config.out"; then warn "OpenClaw config is missing some X surfaces" "$(cat "$TMP_ROOT/config.out")"; else ok "OpenClaw config enables xurl + xAI x_search surfaces"; fi
 else
   warn "OpenClaw config not found" "$CONFIG"
 fi
 
 if command -v openclaw >/dev/null 2>&1; then
-  if openclaw models auth list --provider xai --json >/tmp/xtk-doctor-xai-auth.json 2>/tmp/xtk-doctor-xai-auth.err; then
-    XAI_AUTH_SUMMARY="$(python3 - <<'PY'
+  if openclaw models auth list --provider xai --json >"$TMP_ROOT/xai-auth.json" 2>"$TMP_ROOT/xai-auth.err"; then
+    XAI_AUTH_SUMMARY="$(XTK_DOCTOR_XAI_AUTH_JSON="$TMP_ROOT/xai-auth.json" python3 - <<'PY'
 import json
+import os
 from datetime import datetime, timezone
 
 try:
-    data = json.load(open("/tmp/xtk-doctor-xai-auth.json"))
+    data = json.load(open(os.environ["XTK_DOCTOR_XAI_AUTH_JSON"]))
 except Exception as exc:
     print(f"WARN|could not parse xAI auth profile list: {exc}")
     raise SystemExit(0)
@@ -107,10 +117,12 @@ PY
     case "$XAI_AUTH_STATUS" in
       OK)
         ok "xAI OAuth auth profile present (${XAI_AUTH_DETAIL})"
+        XAI_OAUTH_PRESENT=1
         XAI_OAUTH_AVAILABLE=1
         ;;
       EXPIRED)
-        warn "xAI OAuth auth profile appears expired" "$XAI_AUTH_DETAIL"
+        warn "xAI OAuth auth profile token is expired/stale; model smoke will attempt refresh" "$XAI_AUTH_DETAIL"
+        XAI_OAUTH_PRESENT=1
         ;;
       MISSING)
         warn "xAI OAuth auth profile missing" "$XAI_AUTH_DETAIL"
@@ -120,16 +132,17 @@ PY
         ;;
     esac
   else
-    warn "xAI OAuth auth profile check failed" "$(cat /tmp/xtk-doctor-xai-auth.err 2>/dev/null)"
+    warn "xAI OAuth auth profile check failed" "$(cat "$TMP_ROOT/xai-auth.err" 2>/dev/null)"
   fi
 else
   warn "OpenClaw CLI missing" "Cannot inspect xAI auth profiles"
 fi
 
 if grep -q '^XAI_API_KEY=' "$ENV_FILE" 2>/dev/null || [ -n "${XAI_API_KEY:-}" ]; then
+  XAI_API_KEY_FALLBACK_AVAILABLE=1
   ok "xAI API-key fallback appears configured (not primary)"
-elif [ "$XAI_OAUTH_AVAILABLE" -eq 1 ]; then
-  ok "xAI API-key fallback absent; OAuth profile is primary"
+elif [ "$XAI_OAUTH_AVAILABLE" -eq 1 ] || [ "$XAI_OAUTH_PRESENT" -eq 1 ]; then
+  ok "xAI API-key fallback absent; OAuth profile is configured as primary"
 else
   warn "xAI API-key fallback not found" "No OAuth profile or API-key fallback was detected"
 fi
@@ -179,15 +192,20 @@ fi
 TWEET_ID="$(tweet_id_from_url "$TWEET_URL")"
 if [ -n "$BEARER_OP_REF" ] && command -v op >/dev/null 2>&1 && [ -n "$TWEET_ID" ]; then
   if TOKEN="$(op read "$BEARER_OP_REF" 2>/dev/null)" && [ -n "$TOKEN" ]; then
-    HTTP_CODE="$(curl -sS -o /tmp/xtk-doctor-tweet.json -w '%{http_code}' \
+    HTTP_CODE="$(curl -sS -o "$TMP_ROOT/tweet.json" -w '%{http_code}' \
       -H "Authorization: Bearer ${TOKEN}" \
       -H 'User-Agent: openclaw-x-twitter-kit' \
-      "https://api.twitter.com/2/tweets/${TWEET_ID}?tweet.fields=author_id,created_at,public_metrics" 2>/tmp/xtk-doctor-curl.err)"
+      "https://api.twitter.com/2/tweets/${TWEET_ID}?tweet.fields=author_id,created_at,public_metrics" 2>"$TMP_ROOT/curl.err")"
     unset TOKEN
-    if [ "$HTTP_CODE" = "200" ] && python3 -c 'import json; d=json.load(open("/tmp/xtk-doctor-tweet.json")); assert d.get("data",{}).get("id")' >/dev/null 2>&1; then
+    if [ "$HTTP_CODE" = "200" ] && python3 - "$TMP_ROOT/tweet.json" <<'PY' >/dev/null 2>&1
+import json, sys
+d=json.load(open(sys.argv[1]))
+assert d.get("data",{}).get("id")
+PY
+    then
       ok "legacy direct bearer tweet read works"
     else
-      warn "legacy direct bearer tweet read failed" "HTTP ${HTTP_CODE}; $(cat /tmp/xtk-doctor-curl.err 2>/dev/null)"
+      warn "legacy direct bearer tweet read failed" "HTTP ${HTTP_CODE}; $(cat "$TMP_ROOT/curl.err" 2>/dev/null)"
     fi
   else
     warn "1Password bearer token read failed" "$BEARER_OP_REF unavailable"
@@ -196,20 +214,26 @@ else
   warn "legacy direct bearer check skipped" "Set XTK_BEARER_OP_REF to a 1Password bearer-token reference"
 fi
 
-if [ "$XAI_OAUTH_AVAILABLE" -eq 1 ] && command -v openclaw >/dev/null 2>&1; then
-  XAI_MODEL_OUT="$(XAI_API_KEY='' openclaw infer model run --local --json --model "$XAI_MODEL" --prompt "$XAI_PROMPT" 2>/tmp/xtk-doctor-xai-model.err)"
+if [ "$XAI_OAUTH_PRESENT" -eq 1 ] && command -v openclaw >/dev/null 2>&1; then
+  XAI_MODEL_OUT="$(XAI_API_KEY='' openclaw infer model run --local --json --model "$XAI_MODEL" --prompt "$XAI_PROMPT" 2>"$TMP_ROOT/xai-model.err")"
   XAI_MODEL_STATUS=$?
   if [ "$XAI_MODEL_STATUS" -eq 0 ] && printf '%s' "$XAI_MODEL_OUT" | grep -q "$XAI_EXPECTED"; then
     ok "xAI/Grok model smoke works with auth-profile lane (${XAI_MODEL})"
+    XAI_OAUTH_AVAILABLE=1
   else
-    warn "xAI/Grok model smoke failed" "$(cat /tmp/xtk-doctor-xai-model.err 2>/dev/null)"
+    warn "xAI/Grok model smoke failed" "$(cat "$TMP_ROOT/xai-model.err" 2>/dev/null)"
+  fi
+elif [ "$XAI_API_KEY_FALLBACK_AVAILABLE" -eq 1 ] && command -v openclaw >/dev/null 2>&1; then
+  XAI_MODEL_OUT="$(openclaw infer model run --local --json --model "$XAI_MODEL" --prompt "$XAI_PROMPT" 2>"$TMP_ROOT/xai-model.err")"
+  XAI_MODEL_STATUS=$?
+  if [ "$XAI_MODEL_STATUS" -eq 0 ] && printf '%s' "$XAI_MODEL_OUT" | grep -q "$XAI_EXPECTED"; then
+    ok "xAI/Grok model smoke works with API-key fallback lane (${XAI_MODEL})"
+  else
+    warn "xAI/Grok API-key fallback smoke failed" "$(cat "$TMP_ROOT/xai-model.err" 2>/dev/null)"
   fi
 else
-  warn "xAI/Grok model smoke skipped" "No usable xAI OAuth profile detected"
+  warn "xAI/Grok model smoke skipped" "No usable xAI OAuth profile or API-key fallback detected"
 fi
-unset XAI_API_KEY
-
-rm -f /tmp/xtk-doctor-config.out /tmp/xtk-doctor-config.err /tmp/xtk-doctor-tweet.json /tmp/xtk-doctor-curl.err /tmp/xtk-doctor-xai-auth.json /tmp/xtk-doctor-xai-auth.err /tmp/xtk-doctor-xai-model.err
 
 printf '\nSummary: %d passed, %d warnings, %d failed\n' "$PASS" "$WARN" "$FAIL"
 [ "$FAIL" -eq 0 ]

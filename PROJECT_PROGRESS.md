@@ -60,6 +60,29 @@ Prompted by JPop's Twitter API credit exhaustion and the successful Grok/X Premi
 - Direct bearer API remains the deterministic script/structured JSON lane for exact fields, metrics, pagination, and compatibility scripts.
 - The doctor now checks for an xAI OAuth auth profile with `openclaw models auth list --provider xai --json`, reports API-key auth as fallback, and runs a small Grok model smoke when OAuth is available.
 
+## 2026-06-06 — Offline capability test matrix
+
+Prompted by JPop asking whether the previous modes remained fallback-safe and whether coverage was enough for full capability confidence.
+
+Implemented:
+
+- Added `scripts/test.sh`, a fake-command offline matrix for `twitter-doctor.sh`.
+- Covered xAI/Grok OAuth auth-profile primary routing with `XAI_API_KEY` forced empty.
+- Covered expired/stale OAuth profile detection followed by model-smoke refresh behavior.
+- Covered `XAI_API_KEY` fallback smoke when OAuth profiles are missing.
+- Covered `xurl` exact tweet read, search, and bookmark checks with an alternate bookmark app.
+- Covered direct bearer fallback via fake `op` and fake `curl` while asserting bearer values are not printed.
+- Covered expected xurl OAuth2 username mismatch as a nonzero failure.
+- Added a guard that validation never calls mutating xurl verbs: post, reply, like, repost, delete, follow/unfollow, DM, mute, or block.
+- Wired `scripts/test.sh` into `scripts/ci-check.sh`.
+- Extended the matrix with degraded-path coverage: malformed `openclaw models auth list` JSON, missing `openclaw.json`, partial OpenClaw config surfaces (xai plugin disabled, `x_search` not in `tools.alsoAllow`), `xurl read` live failure, direct bearer HTTP 500, and an API-key fallback secret-leak canary check.
+
+Still intentionally not automated:
+
+- Posting/replying/liking/reposting/deleting/following as JPop.
+- Browser fallback UI automation.
+- Live X API reads while the X developer account is credit-depleted.
+
 ## 2026-05-23 — Community polish pass
 
 Research inputs: GitHub community health docs, GitHub security/repository-topic docs, X OAuth2 PKCE docs, npm xurl metadata, OpenClaw local skill docs, and a Perplexity checklist synthesis.

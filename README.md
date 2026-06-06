@@ -120,6 +120,23 @@ Additional docs:
 scripts/ci-check.sh
 ```
 
+`ci-check.sh` includes `scripts/test.sh`, an offline fake-command capability
+matrix for the doctor. It exercises:
+
+- xAI/Grok OAuth auth-profile primary routing.
+- Expired/stale OAuth profile refresh smoke behavior.
+- `XAI_API_KEY` fallback behavior when OAuth is absent.
+- `xurl` exact read, search, and bookmark checks.
+- Direct bearer fallback checks without printing bearer values.
+- Expected-user mismatch failure behavior.
+- Malformed xAI auth JSON.
+- Missing and partial OpenClaw config surfaces.
+- xurl live read failures.
+- Direct bearer HTTP failures.
+- API-key fallback secret-leak canaries.
+- Guardrails that validation does not call mutating xurl verbs such as post,
+  reply, like, repost, delete, follow, DM, mute, or block.
+
 For live auth validation, run the doctor with your own credentials/config:
 
 ```bash
