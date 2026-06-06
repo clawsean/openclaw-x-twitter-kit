@@ -110,6 +110,30 @@ Safety:
 - Live failures are expected to be meaningful external-state signals: auth,
   subscription, X API credits, or upstream service availability.
 
+## 2026-06-06 — Skill ownership cleanup
+
+Prompted by JPop noticing redundancy between the live `search-twitter` skill,
+the bundled `xurl` skill, and this public kit.
+
+Decision:
+
+- Host-specific Twitter/search skills own agent intent routing, local account
+  expectations, chat reporting, and any standing policies.
+- The bundled `xurl` skill owns raw `xurl` CLI mechanics and command syntax.
+- This public `x-twitter-kit` owns portable setup, diagnostics, templates,
+  offline capability tests, and optional online non-mutating proof.
+
+Implemented:
+
+- Slimmed the live `skills/search-twitter/SKILL.md` into a routing-policy layer
+  and removed duplicated direct API helper examples.
+- Tightened `skills/search-twitter/test.sh` so future drift is caught: xAI/Grok
+  OAuth `x_search` first for ordinary research, `xurl read` first for exact
+  URLs/IDs, direct bearer only as fallback/script lane, and public-kit pointers
+  for diagnostics/tests.
+- Added public-kit docs clarifying that `x-twitter-kit` should not absorb
+  host-specific secrets/profile names or duplicate a full `xurl` manual.
+
 ## 2026-05-23 — Community polish pass
 
 Research inputs: GitHub community health docs, GitHub security/repository-topic docs, X OAuth2 PKCE docs, npm xurl metadata, OpenClaw local skill docs, and a Perplexity checklist synthesis.

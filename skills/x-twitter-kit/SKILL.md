@@ -7,6 +7,15 @@ description: Use this when configuring, diagnosing, or operating layered X/Twitt
 
 Use this skill to choose the correct X/Twitter transport/capability path and avoid mixing credentials, auth contexts, or safety rules.
 
+## Relationship to Host Skills
+
+This shareable kit owns setup, diagnostics, templates, and proof. If a workspace
+also has a host-specific Twitter/search skill, let that skill own agent intent
+routing, local account expectations, and chat reporting rules.
+
+Use the bundled `xurl` skill for raw command mechanics. This kit should not
+duplicate a full `xurl` manual or contain host-specific secrets/profile names.
+
 ## Capability-first routing
 
 Pick the operation first, then choose the transport that can perform it safely:

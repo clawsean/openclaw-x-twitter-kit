@@ -27,6 +27,21 @@ This is a **technical v0 kit**, not a hosted service or one-click consumer insta
 - Keep durable Twitter memory/cache layers outside this kit. Pair with local-first tools when you need repeated analysis without repeated live API reads.
 - Keep public/mutating actions approval-gated even when auth is healthy.
 
+## Skill ownership model
+
+This repo owns the portable setup, diagnostics, templates, and test matrix.
+
+In a running OpenClaw workspace, keep responsibilities split:
+
+- A host-specific search skill owns agent intent routing and local auth
+  expectations.
+- The bundled `xurl` skill owns raw `xurl` command mechanics.
+- This `x-twitter-kit` skill/repo owns shareable setup, doctor scripts, and
+  offline/online proof.
+
+Do not copy host-specific secrets, profile names, or one-off account assumptions
+into this public kit.
+
 ## Contents
 
 ```text

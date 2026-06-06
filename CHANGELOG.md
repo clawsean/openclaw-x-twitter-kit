@@ -8,6 +8,9 @@
 - Add offline doctor capability tests for OAuth-primary routing, expired-token refresh smoke behavior, API-key fallback, xurl read/search/bookmark checks, direct bearer fallback, user mismatch failures, and non-mutating validation guardrails.
 - Extend the offline matrix to cover malformed xAI auth JSON, missing OpenClaw config, partial OpenClaw config surfaces, xurl live read failure, direct bearer HTTP failure, and an API-key fallback secret-leak guard.
 - Add an opt-in online non-mutating test runner for live xAI OAuth `x_search`, xurl read/search, optional bookmark listing, and optional direct bearer reads.
+- Document the skill ownership split: host-specific search skills own agent routing,
+  bundled `xurl` owns raw CLI mechanics, and this kit owns portable setup,
+  diagnostics, and proof.
 
 ## v0.1.0 - 2026-05-23
 

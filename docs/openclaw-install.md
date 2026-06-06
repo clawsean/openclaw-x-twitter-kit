@@ -11,6 +11,11 @@ cp -R openclaw-x-twitter-kit/skills/x-twitter-kit ~/.openclaw/workspace/skills/
 
 Start a new OpenClaw turn/session so the skills snapshot refreshes, then ask the agent to use the `x-twitter-kit` skill.
 
+If your workspace already has a host-specific Twitter/search skill, keep that
+skill as the user-facing routing policy and use this kit for setup,
+diagnostics, and proof. Do not copy host-specific account names, secret refs, or
+standing action policies into this public skill.
+
 ## Option B: load from this repo as an extra skill directory
 
 If you keep helper repos outside the workspace, configure OpenClaw `skills.load.extraDirs` to include the repo's `skills` directory.
