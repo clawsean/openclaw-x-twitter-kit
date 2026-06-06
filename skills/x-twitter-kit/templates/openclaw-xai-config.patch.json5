@@ -11,7 +11,10 @@
         enabled: true,
         config: {
           webSearch: {
-            // Use a secret provider or env var, not plaintext.
+            // Preferred: sign into xAI/Grok with OpenClaw auth profiles:
+            // openclaw models auth login --provider xai --method oauth
+            //
+            // Optional fallback: use a secret provider or env var, not plaintext.
             // apiKey: { source: "exec", provider: "onepassword_xai", id: "value" },
             baseUrl: "https://api.x.ai/v1",
           },

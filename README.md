@@ -4,9 +4,9 @@
 
 A small OpenClaw-first helper skill + scripts for dependable X/Twitter access using layered transports and capability checks:
 
-1. **xurl** — primary authenticated X transport for tweet reads, search, bookmarks, timeline, media, and user actions.
-2. **Direct bearer API** — deterministic script/API transport for exact X API calls.
-3. **OpenClaw xAI `x_search`** — broad semantic discovery transport.
+1. **OpenClaw xAI `x_search`** — preferred X search/research transport, using signed-in Grok/xAI OAuth auth profiles when available.
+2. **xurl** — primary authenticated X account transport for tweet reads, bookmarks, timeline, media, and user actions.
+3. **Direct bearer API** — deterministic script/API transport for exact X API calls, metrics, pagination, and compatibility scripts.
 4. **Browser fallback** — last resort for UI-only cases or API-tier blocks.
 
 The kit is designed to be shareable: it ships no secrets and should work for any OpenClaw/VPS user who brings their own X Developer app and credentials.
@@ -22,6 +22,7 @@ This is a **technical v0 kit**, not a hosted service or one-click consumer insta
 ## Design stance
 
 - Route by **capability** first: exact tweet read, search, bookmarks, DMs, posting, media, or broad discovery may require different auth contexts.
+- For ordinary "search Twitter/X", research, summaries, and cited discovery, prefer OpenClaw/xAI `x_search` through the signed-in xAI/Grok auth profile. Do not spend X API credits or reach for an xAI API-key fallback unless OAuth is unavailable.
 - Treat `xurl` as an external credential adapter. This kit shells out to `xurl`; it does **not** parse, mutate, upload, or own `~/.xurl`.
 - Keep durable Twitter memory/cache layers outside this kit. Pair with local-first tools when you need repeated analysis without repeated live API reads.
 - Keep public/mutating actions approval-gated even when auth is healthy.
@@ -65,7 +66,20 @@ Additional docs:
 
 3. Register app credentials with `xurl` outside of agent/chat context. Do not paste credentials into chat or commit them.
 
-4. Run OAuth2 auth:
+4. Sign into xAI/Grok in OpenClaw for OAuth-backed `x_search`:
+
+   ```bash
+   openclaw models auth login --provider xai --method oauth
+   openclaw models auth list --provider xai
+   ```
+
+   On a headless/VPS setup, use device-code auth when available:
+
+   ```bash
+   openclaw models auth login --provider xai --device-code
+   ```
+
+5. Run OAuth2 auth for X account surfaces:
 
    ```bash
    skills/x-twitter-kit/scripts/xurl-oauth2-auth.sh \
@@ -73,7 +87,7 @@ Additional docs:
      --redirect-uri https://example.com/callback
    ```
 
-5. Run the doctor:
+6. Run the doctor:
 
    ```bash
    XTK_EXPECTED_X_USERNAME=your_handle \
@@ -95,7 +109,8 @@ Additional docs:
 
 - Bookmarks require OAuth2 user context. OAuth1 and app-only bearer are not enough.
 - Some xurl setups keep OAuth2 client registration and default OAuth1/bearer credentials under different app names. That is okay; use `XTK_BOOKMARK_APP` / `xurl --app <oauth2-app>` for OAuth2-only endpoints.
-- `x_search` is excellent for broad discovery, but it is not a replacement for bookmarks or posting.
+- `x_search` should be the default for broad discovery and research, and it should prefer OpenClaw's xAI OAuth auth profile. It is not a replacement for bookmarks, posting, metrics, pagination, or other structured/account actions.
+- If both xAI OAuth and `XAI_API_KEY` are configured, treat the API key as a fallback, not the normal Twitter-search lane.
 - Public/mutating actions — posting, replies, DMs, likes/reposts, follows, bookmark mutation, deletes — should stay approval-gated.
 - Never commit or paste `~/.xurl`, OAuth callback codes, client secrets, access/refresh tokens, bearer tokens, or xAI keys.
 

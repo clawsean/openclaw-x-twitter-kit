@@ -7,9 +7,9 @@
 
 Share the layered X/Twitter setup we built for OpenClaw:
 
-1. xurl as primary authenticated lane.
-2. Direct bearer API as deterministic script fallback.
-3. xAI `x_search` as broad discovery lane.
+1. xAI/Grok OAuth-backed `x_search` as the primary search/research lane.
+2. xurl as primary authenticated account/action lane.
+3. Direct bearer API as deterministic script fallback.
 4. Browser as last-resort fallback.
 
 ## Decisions
@@ -18,6 +18,7 @@ Share the layered X/Twitter setup we built for OpenClaw:
 - OpenClaw-first, but scripts are generic enough for any VPS/agent setup.
 - 1Password/env templates only; no committed secrets.
 - v0 includes read/search/bookmarks, doctor, OAuth2 setup docs/templates.
+- Ordinary X search/research should prefer OpenClaw's signed-in xAI/Grok OAuth auth profile; `XAI_API_KEY` is fallback only.
 - Mutating/public X actions stay approval-gated.
 - Public callback/Caddy route is the recommended OAuth path; localhost/tunnel remains a fallback.
 
@@ -49,6 +50,15 @@ Share the layered X/Twitter setup we built for OpenClaw:
 ## Important implementation note
 
 Some xurl setups keep OAuth2 client registration separate from default OAuth1/bearer credentials. In our local setup, default read/search works through `default`, while OAuth2-only bookmark operations require `--app jpop-oauth2`. The kit supports this with `XTK_BOOKMARK_APP`.
+
+## 2026-06-05 — Grok OAuth auth-profile search default
+
+Prompted by JPop's Twitter API credit exhaustion and the successful Grok/X Premium OAuth proof, flipped the documented search default:
+
+- Ordinary X/Twitter search, research, summaries, and cited discovery now prefer OpenClaw/xAI `x_search` through the signed-in xAI/Grok auth profile.
+- `xurl` remains the primary account/action transport for exact tweet reads, timelines, bookmarks, posting/replies, likes/reposts, media, and DMs.
+- Direct bearer API remains the deterministic script/structured JSON lane for exact fields, metrics, pagination, and compatibility scripts.
+- The doctor now checks for an xAI OAuth auth profile with `openclaw models auth list --provider xai --json`, reports API-key auth as fallback, and runs a small Grok model smoke when OAuth is available.
 
 ## 2026-05-23 — Community polish pass
 

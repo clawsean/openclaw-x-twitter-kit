@@ -34,7 +34,22 @@ Prefer the temporary public callback proxy in `templates/Caddyfile.callback.exam
 
 ## Missing xAI / `x_search` auth
 
-The kit can validate that an xAI key exists and can call the model-list endpoint, but OpenClaw must also expose/configure the xAI plugin and `x_search` tool. See `templates/openclaw-xai-config.patch.json5` for the config shape.
+Prefer the signed-in xAI/Grok OAuth profile before any API-key fallback:
+
+```bash
+openclaw models auth list --provider xai
+openclaw models auth login --provider xai --method oauth
+```
+
+On a VPS or SSH-only setup, use device-code auth when available:
+
+```bash
+openclaw models auth login --provider xai --device-code
+```
+
+OpenClaw must also expose/configure the xAI plugin and `x_search` tool. See `templates/openclaw-xai-config.patch.json5` for the config shape.
+
+If an ordinary X research task appears to burn X API credits, check whether the agent used `xurl search` or `/2/tweets/search/recent` instead of `x_search`. Use xurl/direct bearer only when the task needs account context, exact fields, metrics, pagination, bookmarks, posting, or deterministic structured JSON.
 
 ## What not to paste into issues
 

@@ -8,10 +8,15 @@ BOOKMARK_APP="${XTK_BOOKMARK_APP:-}"
 BEARER_OP_REF="${XTK_BEARER_OP_REF:-}"
 CONFIG="${XTK_OPENCLAW_CONFIG:-$HOME/.openclaw/openclaw.json}"
 ENV_FILE="${XTK_OPENCLAW_ENV:-$HOME/.openclaw/.env}"
+XAI_MODEL="${XTK_XAI_MODEL:-xai/grok-4.3}"
+XAI_EXPECTED="${XTK_XAI_EXPECTED:-XTK_XAI_OAUTH_OK}"
+XAI_PROMPT="${XTK_XAI_PROMPT:-Reply exactly: ${XAI_EXPECTED}}"
+SKIP_XURL_LIVE="${XTK_SKIP_XURL_LIVE:-0}"
 
 PASS=0
 FAIL=0
 WARN=0
+XAI_OAUTH_AVAILABLE=0
 
 strip_ansi() { sed -E 's/\x1B\[[0-9;?]*[A-Za-z]//g'; }
 ok() { printf '✅ %s\n' "$1"; PASS=$((PASS+1)); }
@@ -58,7 +63,76 @@ else
   warn "OpenClaw config not found" "$CONFIG"
 fi
 
-if grep -q '^XAI_API_KEY=' "$ENV_FILE" 2>/dev/null || [ -n "${XAI_API_KEY:-}" ]; then ok "xAI key appears configured without printing it"; else warn "xAI key not found" "x_search backend probe will be skipped unless XAI_API_KEY is set"; fi
+if command -v openclaw >/dev/null 2>&1; then
+  if openclaw models auth list --provider xai --json >/tmp/xtk-doctor-xai-auth.json 2>/tmp/xtk-doctor-xai-auth.err; then
+    XAI_AUTH_SUMMARY="$(python3 - <<'PY'
+import json
+from datetime import datetime, timezone
+
+try:
+    data = json.load(open("/tmp/xtk-doctor-xai-auth.json"))
+except Exception as exc:
+    print(f"WARN|could not parse xAI auth profile list: {exc}")
+    raise SystemExit(0)
+
+profiles = [
+    p for p in data.get("profiles", [])
+    if p.get("provider") == "xai" and p.get("type") == "oauth"
+]
+if not profiles:
+    print("MISSING|no xAI OAuth auth profile found")
+    raise SystemExit(0)
+
+profile = profiles[0]
+profile_id = profile.get("id") or "xai OAuth profile"
+expires_at = profile.get("expiresAt")
+if not expires_at:
+    print(f"OK|{profile_id} present")
+    raise SystemExit(0)
+
+try:
+    expires = datetime.fromisoformat(str(expires_at).replace("Z", "+00:00"))
+except Exception:
+    print(f"OK|{profile_id} present; unparsed expiry {expires_at}")
+    raise SystemExit(0)
+
+if expires <= datetime.now(timezone.utc):
+    print(f"EXPIRED|{profile_id} expired at {expires_at}")
+else:
+    print(f"OK|{profile_id} expires at {expires_at}")
+PY
+)"
+    XAI_AUTH_STATUS="${XAI_AUTH_SUMMARY%%|*}"
+    XAI_AUTH_DETAIL="${XAI_AUTH_SUMMARY#*|}"
+    case "$XAI_AUTH_STATUS" in
+      OK)
+        ok "xAI OAuth auth profile present (${XAI_AUTH_DETAIL})"
+        XAI_OAUTH_AVAILABLE=1
+        ;;
+      EXPIRED)
+        warn "xAI OAuth auth profile appears expired" "$XAI_AUTH_DETAIL"
+        ;;
+      MISSING)
+        warn "xAI OAuth auth profile missing" "$XAI_AUTH_DETAIL"
+        ;;
+      *)
+        warn "xAI OAuth auth profile check inconclusive" "$XAI_AUTH_DETAIL"
+        ;;
+    esac
+  else
+    warn "xAI OAuth auth profile check failed" "$(cat /tmp/xtk-doctor-xai-auth.err 2>/dev/null)"
+  fi
+else
+  warn "OpenClaw CLI missing" "Cannot inspect xAI auth profiles"
+fi
+
+if grep -q '^XAI_API_KEY=' "$ENV_FILE" 2>/dev/null || [ -n "${XAI_API_KEY:-}" ]; then
+  ok "xAI API-key fallback appears configured (not primary)"
+elif [ "$XAI_OAUTH_AVAILABLE" -eq 1 ]; then
+  ok "xAI API-key fallback absent; OAuth profile is primary"
+else
+  warn "xAI API-key fallback not found" "No OAuth profile or API-key fallback was detected"
+fi
 
 if grep -q 'handle /callback\*' /etc/caddy/Caddyfile 2>/dev/null; then warn "temporary OAuth callback proxy appears present" "Remove it when not actively re-authing"; else ok "no Caddy /callback* proxy detected"; fi
 
@@ -66,7 +140,7 @@ if command -v xurl >/dev/null 2>&1; then
   AUTH_STATUS="$(xurl auth status 2>&1 | strip_ansi)"
   if [ -n "$EXPECTED_USER" ]; then
     if grep -q "oauth2: ${EXPECTED_USER}" <<<"$AUTH_STATUS"; then ok "xurl OAuth2 user matches ${EXPECTED_USER}"; else fail "xurl OAuth2 user mismatch" "$AUTH_STATUS"; fi
-  elif grep -q 'oauth2: ' <<<"$AUTH_STATUS" && ! grep -q 'oauth2: (none)' <<<"$AUTH_STATUS"; then
+  elif grep 'oauth2: ' <<<"$AUTH_STATUS" | grep -vq 'oauth2: (none)'; then
     ok "xurl has at least one OAuth2 user"
   else
     warn "xurl OAuth2 user not detected" "$AUTH_STATUS"
@@ -82,20 +156,24 @@ if command -v xurl >/dev/null 2>&1; then
     warn "xurl bearer not detected" "Optional if xurl search works via another auth path"
   fi
 
-  READ_JSON="$(xurl read "$TWEET_URL" 2>&1)"
-  if printf '%s' "$READ_JSON" | json_has_data_object; then ok "xurl exact tweet URL read works"; else fail "xurl exact tweet read failed" "$READ_JSON"; fi
-
-  SEARCH_JSON="$(xurl search "$SEARCH_QUERY" -n 1 2>&1)"
-  if printf '%s' "$SEARCH_JSON" | json_has_data_array; then ok "xurl search works"; else fail "xurl search failed" "$SEARCH_JSON"; fi
-
-  if [ -n "$BOOKMARK_APP" ]; then
-    BOOKMARK_JSON="$(xurl --app "$BOOKMARK_APP" bookmarks -n 1 2>&1)"
-    BOOKMARK_LABEL="xurl bookmarks work via app ${BOOKMARK_APP} (OAuth2 user context)"
+  if [ "$SKIP_XURL_LIVE" = "1" ]; then
+    warn "xurl live read/search/bookmark checks skipped" "XTK_SKIP_XURL_LIVE=1"
   else
-    BOOKMARK_JSON="$(xurl bookmarks -n 1 2>&1)"
-    BOOKMARK_LABEL="xurl bookmarks work with default app (OAuth2 user context)"
+    READ_JSON="$(xurl read "$TWEET_URL" 2>&1)"
+    if printf '%s' "$READ_JSON" | json_has_data_object; then ok "xurl exact tweet URL read works"; else fail "xurl exact tweet read failed" "$READ_JSON"; fi
+
+    SEARCH_JSON="$(xurl search "$SEARCH_QUERY" -n 1 2>&1)"
+    if printf '%s' "$SEARCH_JSON" | json_has_data_array; then ok "xurl search works"; else fail "xurl search failed" "$SEARCH_JSON"; fi
+
+    if [ -n "$BOOKMARK_APP" ]; then
+      BOOKMARK_JSON="$(xurl --app "$BOOKMARK_APP" bookmarks -n 1 2>&1)"
+      BOOKMARK_LABEL="xurl bookmarks work via app ${BOOKMARK_APP} (OAuth2 user context)"
+    else
+      BOOKMARK_JSON="$(xurl bookmarks -n 1 2>&1)"
+      BOOKMARK_LABEL="xurl bookmarks work with default app (OAuth2 user context)"
+    fi
+    if printf '%s' "$BOOKMARK_JSON" | json_has_data_array; then ok "$BOOKMARK_LABEL"; else warn "xurl bookmarks failed" "$BOOKMARK_JSON"; fi
   fi
-  if printf '%s' "$BOOKMARK_JSON" | json_has_data_array; then ok "$BOOKMARK_LABEL"; else warn "xurl bookmarks failed" "$BOOKMARK_JSON"; fi
 fi
 
 TWEET_ID="$(tweet_id_from_url "$TWEET_URL")"
@@ -118,23 +196,20 @@ else
   warn "legacy direct bearer check skipped" "Set XTK_BEARER_OP_REF to a 1Password bearer-token reference"
 fi
 
-if [ -f "$ENV_FILE" ]; then
-  set -a
-  # shellcheck disable=SC1090
-  . "$ENV_FILE" >/dev/null 2>&1 || true
-  set +a
-fi
-if [ -n "${XAI_API_KEY:-}" ]; then
-  HTTP_CODE="$(curl -sS -o /tmp/xtk-doctor-xai-models.json -w '%{http_code}' \
-    -H "Authorization: Bearer ${XAI_API_KEY}" \
-    https://api.x.ai/v1/models 2>/tmp/xtk-doctor-xai.err)"
-  if [ "$HTTP_CODE" = "200" ]; then ok "xAI API key works for model list (x_search backend auth)"; else warn "xAI API key probe failed" "HTTP ${HTTP_CODE}; $(cat /tmp/xtk-doctor-xai.err 2>/dev/null)"; fi
+if [ "$XAI_OAUTH_AVAILABLE" -eq 1 ] && command -v openclaw >/dev/null 2>&1; then
+  XAI_MODEL_OUT="$(XAI_API_KEY='' openclaw infer model run --local --json --model "$XAI_MODEL" --prompt "$XAI_PROMPT" 2>/tmp/xtk-doctor-xai-model.err)"
+  XAI_MODEL_STATUS=$?
+  if [ "$XAI_MODEL_STATUS" -eq 0 ] && printf '%s' "$XAI_MODEL_OUT" | grep -q "$XAI_EXPECTED"; then
+    ok "xAI/Grok model smoke works with auth-profile lane (${XAI_MODEL})"
+  else
+    warn "xAI/Grok model smoke failed" "$(cat /tmp/xtk-doctor-xai-model.err 2>/dev/null)"
+  fi
 else
-  warn "live xAI API probe skipped" "Set XAI_API_KEY to test x_search backend auth"
+  warn "xAI/Grok model smoke skipped" "No usable xAI OAuth profile detected"
 fi
 unset XAI_API_KEY
 
-rm -f /tmp/xtk-doctor-config.out /tmp/xtk-doctor-config.err /tmp/xtk-doctor-tweet.json /tmp/xtk-doctor-curl.err /tmp/xtk-doctor-xai-models.json /tmp/xtk-doctor-xai.err
+rm -f /tmp/xtk-doctor-config.out /tmp/xtk-doctor-config.err /tmp/xtk-doctor-tweet.json /tmp/xtk-doctor-curl.err /tmp/xtk-doctor-xai-auth.json /tmp/xtk-doctor-xai-auth.err /tmp/xtk-doctor-xai-model.err
 
 printf '\nSummary: %d passed, %d warnings, %d failed\n' "$PASS" "$WARN" "$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Prefer OpenClaw/xAI `x_search` through signed-in Grok OAuth auth profiles for ordinary X/Twitter search and research.
+- Narrow xurl/direct bearer guidance to exact/account/structured X API work.
+- Update the doctor to inspect xAI auth profiles and treat `XAI_API_KEY` as fallback auth.
+
 ## v0.1.0 - 2026-05-23
 
 Initial community-ready technical kit:

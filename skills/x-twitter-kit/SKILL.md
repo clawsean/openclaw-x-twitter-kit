@@ -1,6 +1,6 @@
 ---
 name: x-twitter-kit
-description: Use this when configuring, diagnosing, or operating layered X/Twitter access in OpenClaw: xurl OAuth1/OAuth2/bearer, direct X API bearer scripts, xAI x_search, bookmark access, or X posting safety.
+description: Use this when configuring, diagnosing, or operating layered X/Twitter access in OpenClaw: auth-profile-backed xAI x_search, xurl OAuth1/OAuth2/bearer, direct X API scripts, bookmark access, or X posting safety.
 ---
 
 # X/Twitter Kit
@@ -11,27 +11,30 @@ Use this skill to choose the correct X/Twitter transport/capability path and avo
 
 Pick the operation first, then choose the transport that can perform it safely:
 
+- **Ordinary X/Twitter search, research, summaries, and cited discovery** → prefer OpenClaw/xAI `x_search` through the signed-in xAI/Grok auth profile.
 - **Exact tweet URL read** → prefer `xurl`; use direct bearer only for deterministic scripts or when `xurl` is unavailable.
-- **Search / timeline / mentions** → prefer `xurl` for account-aware live reads; use `x_search` for broad semantic discovery.
+- **Timeline / mentions / account-aware reads** → prefer `xurl`, because these depend on user/account context rather than broad semantic search.
 - **Bookmarks / likes / DMs / posting / replies** → require OAuth2 user context through `xurl`; verify the selected app before acting.
 - **Repeated analysis / local memory** → use or add a local cache layer outside this kit. Do not keep spending live API reads when durable local state is available.
 - **UI-only or API-tier gaps** → browser fallback, with explicit approval for any public/mutating action.
 
 ## Transport selection
 
-1. **xurl (primary authenticated transport)**
+1. **OpenClaw/xAI `x_search` (primary search/research transport)**
+   - Use for ordinary "search Twitter/X", broad semantic discovery, thread/media-aware search, and find/summarize/cite workflows.
+   - Preferred auth is OpenClaw's signed-in xAI/Grok OAuth profile from auth profiles. Check with `openclaw models auth list --provider xai`.
+   - Auth fallback order should be OAuth profile first, then `XAI_API_KEY`, then `plugins.entries.xai.config.webSearch.apiKey` only when OAuth is unavailable.
+   - Not a replacement for bookmarks, account actions, posting, metrics, or paginated structured ingestion.
+
+2. **xurl (primary authenticated account transport)**
    - Use for tweet URL reads, X search, bookmarks, timeline, likes/reposts/follows, media upload, posting/replies, and DMs.
    - Expected healthy state: `xurl auth status` shows an app with OAuth2 user, OAuth1 ✓ when configured, and bearer ✓ when configured.
    - Bookmarks require OAuth2 user context. If OAuth2 client registration lives under a non-default xurl app, use `xurl --app <oauth2-app> bookmarks` or set `XTK_BOOKMARK_APP` for the doctor.
    - Treat `xurl` as an adapter. Shell out to `xurl`; do not parse, mutate, upload, or take ownership of `~/.xurl`.
 
-2. **Direct bearer API (deterministic script transport)**
-   - Use for exact X API calls from scripts when structured JSON matters.
+3. **Direct bearer API (deterministic script transport)**
+   - Use for exact X API calls from scripts when structured JSON, metrics, pagination, or compatibility with older scripts matters.
    - Fetch bearer tokens at runtime from a secret manager or env var. Never log Authorization headers.
-
-3. **OpenClaw/xAI `x_search` (broad discovery transport)**
-   - Use for semantic/broad discovery, thread/media-aware search, or when natural language beats X query syntax.
-   - Not a replacement for bookmarks, account actions, or posting.
 
 4. **Browser fallback (last resort)**
    - Use only for UI-only cases or API-tier blocks.
@@ -58,8 +61,10 @@ Useful environment variables:
 - `XTK_EXPECTED_X_USERNAME` — expected OAuth2 username in `xurl auth status`.
 - `XTK_TEST_TWEET_URL` — public tweet URL for exact-read smoke test.
 - `XTK_SEARCH_QUERY` — query for xurl search smoke test.
+- `XTK_SKIP_XURL_LIVE` — set to `1` to skip live xurl read/search/bookmark checks when X API credits are depleted.
 - `XTK_BOOKMARK_APP` — optional xurl app for OAuth2-only bookmark checks.
 - `XTK_BEARER_OP_REF` — optional 1Password ref for legacy direct bearer check.
+- `XTK_XAI_MODEL` — xAI/Grok model for the auth-profile smoke, default `xai/grok-4.3`.
 - `XTK_OPENCLAW_CONFIG` / `XTK_OPENCLAW_ENV` — optional OpenClaw config/env paths.
 
 The doctor must not print secrets or bookmark contents.
