@@ -137,6 +137,43 @@ matrix for the doctor. It exercises:
 - Guardrails that validation does not call mutating xurl verbs such as post,
   reply, like, repost, delete, follow, DM, mute, or block.
 
+## Optional online validation
+
+The online runner is opt-in because it spends live xAI/X calls and can fail
+when credentials, subscriptions, or X API credits are unavailable:
+
+```bash
+XTK_RUN_ONLINE_TESTS=1 scripts/test-online.sh
+```
+
+By default it runs only non-mutating checks:
+
+- xAI/Grok auth-profile model smoke, then a direct xAI Responses `x_search`
+  request using the OpenClaw xAI OAuth profile.
+- `xurl read` against `XTK_TEST_TWEET_URL`.
+- `xurl search` against `XTK_SEARCH_QUERY`.
+
+Additional online checks are explicit:
+
+```bash
+XTK_RUN_ONLINE_TESTS=1 \
+XTK_ONLINE_BOOKMARKS=1 \
+XTK_BOOKMARK_APP=default \
+scripts/test-online.sh
+```
+
+```bash
+XTK_RUN_ONLINE_TESTS=1 \
+XTK_ONLINE_BEARER=1 \
+XTK_BEARER_OP_REF='op://Vault/Item/Bearer Token' \
+scripts/test-online.sh
+```
+
+The online runner never calls posting, reply, like, repost, delete, follow,
+bookmark-mutation, DM, mute, or block commands. Bookmark list checks store
+temporary JSON only long enough to validate shape and do not print bookmark
+contents.
+
 For live auth validation, run the doctor with your own credentials/config:
 
 ```bash

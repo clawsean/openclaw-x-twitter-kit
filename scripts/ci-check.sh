@@ -56,6 +56,14 @@ printf 'ok no obvious secrets\n'
 printf '\n== offline capability tests ==\n'
 scripts/test.sh
 
+if [ "${XTK_RUN_ONLINE_TESTS:-0}" = "1" ]; then
+  printf '\n== online capability tests ==\n'
+  scripts/test-online.sh
+else
+  printf '\n== online capability tests skipped ==\n'
+  printf 'Set XTK_RUN_ONLINE_TESTS=1 to run non-mutating live xAI/X checks.\n'
+fi
+
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   printf '\n== whitespace check ==\n'
   git diff --check

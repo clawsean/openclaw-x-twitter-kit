@@ -83,6 +83,33 @@ Still intentionally not automated:
 - Browser fallback UI automation.
 - Live X API reads while the X developer account is credit-depleted.
 
+## 2026-06-06 — Optional online non-mutating tests
+
+Prompted by JPop asking for extra tests that actually test online behavior while
+still avoiding public/mutating account actions.
+
+Implemented:
+
+- Added `scripts/test-online.sh`, gated behind `XTK_RUN_ONLINE_TESTS=1`.
+- Online default checks prove:
+  - xAI/Grok auth-profile model smoke through OpenClaw.
+  - A live xAI Responses `x_search` request using OpenClaw's xAI OAuth profile.
+  - `xurl read` on a public tweet URL.
+  - `xurl search` on a configurable query.
+- Added explicit online toggles for privacy/credit-sensitive checks:
+  - `XTK_ONLINE_BOOKMARKS=1` for bookmark list shape validation without printing bookmark contents.
+  - `XTK_ONLINE_BEARER=1` plus `XTK_BEARER_OP_REF` for direct bearer reads.
+  - `XTK_ONLINE_XAI_X_SEARCH=0` / `XTK_ONLINE_XURL=0` to narrow live proof lanes.
+- Wired `scripts/ci-check.sh` to run online tests only when `XTK_RUN_ONLINE_TESTS=1`.
+
+Safety:
+
+- The online runner does not call posting, replies, likes/reposts, deletes,
+  follows, bookmark mutation, DMs, mute, block, browser automation, or public
+  delivery.
+- Live failures are expected to be meaningful external-state signals: auth,
+  subscription, X API credits, or upstream service availability.
+
 ## 2026-05-23 — Community polish pass
 
 Research inputs: GitHub community health docs, GitHub security/repository-topic docs, X OAuth2 PKCE docs, npm xurl metadata, OpenClaw local skill docs, and a Perplexity checklist synthesis.

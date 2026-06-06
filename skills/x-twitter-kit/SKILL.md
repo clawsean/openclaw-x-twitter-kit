@@ -69,6 +69,23 @@ Useful environment variables:
 
 The doctor must not print secrets or bookmark contents.
 
+For opt-in online proof, run:
+
+```bash
+XTK_RUN_ONLINE_TESTS=1 scripts/test-online.sh
+```
+
+Online test toggles:
+
+- `XTK_ONLINE_XAI_X_SEARCH` — set to `0` to skip the live xAI OAuth `x_search` request.
+- `XTK_ONLINE_XURL` — set to `0` to skip live `xurl read/search`.
+- `XTK_ONLINE_BOOKMARKS` — set to `1` to prove bookmark listing; skipped by default.
+- `XTK_ONLINE_BEARER` — set to `1` with `XTK_BEARER_OP_REF` to prove direct bearer reads.
+- `XTK_XAI_X_SEARCH_QUERY` / `XTK_XAI_X_SEARCH_ALLOWED_HANDLES` — optional live `x_search` target controls.
+
+These tests are non-mutating but spend live provider calls and may fail when
+X API credits, xAI subscription access, or auth profiles are unavailable.
+
 ## OAuth2 on a headless VPS
 
 Use a public callback route instead of a local-browser tunnel when possible.
