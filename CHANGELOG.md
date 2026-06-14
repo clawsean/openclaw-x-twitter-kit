@@ -20,6 +20,12 @@
   with optional local `LOCAL_DEFAULTS.md` for host-specific profile names,
   secret refs, and standing policies. The bundled `xurl` skill remains a raw
   CLI mechanics dependency only.
+- Add `VISION.md` and a local routing guide so operators can adapt the
+  capability-first, spend-aware transport ladder without copying private
+  workspace defaults.
+- Make Peeper's default FxTwitter path fall back to the public syndication path
+  before stale cache, preserving the no-credit monitoring lane during short
+  public endpoint failures.
 
 ## v0.1.0 - 2026-05-23
 

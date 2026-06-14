@@ -78,6 +78,7 @@ assumptions into this public kit.
 ```text
 skills/x-twitter-kit/
 ├── SKILL.md
+├── VISION.md
 ├── fixtures/
 │   └── edgewallet-cache.json
 ├── scripts/
@@ -94,6 +95,7 @@ skills/x-twitter-kit/
 Additional docs:
 
 - [OpenClaw install notes](docs/openclaw-install.md)
+- [Local routing guide](docs/local-routing-guide.md)
 - [X OAuth setup notes](docs/oauth.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Security policy](SECURITY.md)
@@ -183,6 +185,8 @@ Additional docs:
 - Peeper is for discovering public tweet IDs from known public accounts. It
   uses unofficial public endpoints, local cache fallback, and no X/xAI auth.
   Treat it as a practical monitor, not a permanent platform contract.
+- Peeper's default public-source path tries FxTwitter first, falls back to
+  syndication, and then falls back to stale local cache before failing.
 - Bookmarks require OAuth2 user context. OAuth1 and app-only bearer are not enough.
 - Some xurl setups keep OAuth2 client registration and default OAuth1/bearer credentials under different app names. That is okay; use `XTK_BOOKMARK_APP` / `xurl --app <oauth2-app>` for OAuth2-only endpoints.
 - `x_search` should be the default for broad discovery and research, and it should prefer OpenClaw's xAI OAuth auth profile. It is not a replacement for bookmarks, posting, metrics, pagination, or other structured/account actions.
