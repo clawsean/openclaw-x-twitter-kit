@@ -22,6 +22,14 @@ or bearer token values.
 
 ## Routing Defaults
 
+- Known public-account monitoring:
+  `node skills/x-twitter-kit/scripts/peeper.mjs --handle example_handle --limit 40 --json --state state/x-twitter-peeper/example-seen.json --cache state/x-twitter-peeper/example-cache.json`
+  - Peeper should be first for recurring known-account checks because it uses
+    public endpoints plus local cache/seen-state and reports `xApiUsed:false`,
+    `xAiUsed:false`.
+  - Keep `xurl read`, `x_search`, and direct bearer/API as fallback-only for
+    exact tweet reads, broad research, or deterministic structured needs that
+    Peeper/cache cannot satisfy.
 - Ordinary X/Twitter search, research, summaries, and cited discovery:
   OpenClaw/xAI `x_search` through the signed-in xAI/Grok OAuth profile first.
 - Exact tweet URL or tweet ID reads:
@@ -37,3 +45,6 @@ or bearer token values.
   separate standing policy.
 - Bookmark contents should not be printed unless the user explicitly asks and
   the target chat is appropriate.
+- If a Twitter/X task arrives as a reply to another message, prioritize the
+  replied-to text when deriving the query, account, hashtag, tweet URL, or
+  pronoun reference.

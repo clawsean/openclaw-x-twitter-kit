@@ -7,6 +7,9 @@ description: Use this single agent-facing Twitter/X kit when monitoring known pu
 
 Use this skill to choose the correct X/Twitter transport/capability path and avoid mixing credentials, auth contexts, or safety rules.
 
+For the durable intent and product direction behind these rules, read
+`VISION.md` in this skill directory.
+
 ## Single Skill Rule
 
 This is the one agent-facing Twitter/X skill. Do not keep a separate
@@ -58,7 +61,7 @@ Access context:
    - Run one-shot checks with `node scripts/peeper.mjs --handle edgewallet --limit 5 --json`.
    - Run watch mode with `node scripts/peeper.mjs --handle edgewallet --watch --interval 61`.
    - Peeper intentionally avoids X API bearer, X OAuth, xAI/Grok, and paid RSS bridges.
-   - Peeper endpoints are unofficial/undocumented. Keep polling at 61 seconds or slower, rely on local cache, and back off rather than increasing frequency if the public source rate-limits.
+   - Peeper endpoints are unofficial/undocumented. Default source `fx` falls back to syndication and then stale cache before any authenticated/paid route is considered. Keep polling at 61 seconds or slower, rely on local cache, and back off rather than increasing frequency if the public source rate-limits.
    - Any Like, repost, reply, bookmark, DM, follow, or post action must be a separate approved `xurl` action or standing policy.
 
 2. **OpenClaw/xAI `x_search` (primary search/research transport)**

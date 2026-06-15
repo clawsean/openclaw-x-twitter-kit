@@ -27,7 +27,9 @@ does not mean X API/xAI credentials are missing.
 
 - Keep polling at 61 seconds or slower.
 - Let cache fallback carry short outages.
-- Try `--source syndication` if the default FxTwitter source is unavailable.
+- The default `fx` source automatically tries syndication before stale cache.
+- Try `--source syndication` directly if you want to isolate the alternate
+  public source during debugging.
 - Do not "fix" Peeper by adding X OAuth, X API bearer, or xAI search to the
   polling path. Authenticated actions belong in a separate approved hook.
 

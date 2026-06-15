@@ -137,26 +137,14 @@ function pollFx(handle, cachePath, { includeReplies, includeReposts }) {
   try {
     body = fetchWithCurl(url);
   } catch (error) {
-    const cached = loadCache(cachePath);
-    if (!cached) throw error;
-    return {
-      ...cached,
-      stale: true,
-      staleReason: error.message,
-    };
+    return pollFreeFallback(handle, cachePath, `FxTwitter fetch failed: ${error.message}`);
   }
 
   let data;
   try {
     data = JSON.parse(body);
   } catch (error) {
-    const cached = loadCache(cachePath);
-    if (!cached) throw new Error(`FxTwitter response parse failed: ${error.message}`);
-    return {
-      ...cached,
-      stale: true,
-      staleReason: `FxTwitter response parse failed: ${error.message}`,
-    };
+    return pollFreeFallback(handle, cachePath, `FxTwitter response parse failed: ${error.message}`);
   }
   const tweets = (data.results || [])
     .map((entry) => normalizeFxTweet(entry, handle))
@@ -179,6 +167,25 @@ function pollFx(handle, cachePath, { includeReplies, includeReposts }) {
   };
   saveCache(cachePath, result);
   return result;
+}
+
+function pollFreeFallback(handle, cachePath, reason) {
+  try {
+    const result = pollSyndication(handle, cachePath);
+    return {
+      ...result,
+      fallbackFrom: "fx",
+      fallbackReason: reason,
+    };
+  } catch (error) {
+    const cached = loadCache(cachePath);
+    if (!cached) throw new Error(`${reason}; syndication fallback failed: ${error.message}`);
+    return {
+      ...cached,
+      stale: true,
+      staleReason: `${reason}; syndication fallback failed: ${error.message}`,
+    };
+  }
 }
 
 function pollSyndication(handle, cachePath) {

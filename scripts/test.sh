@@ -201,6 +201,7 @@ set -euo pipefail
 printf 'curl called\n' >>"${XTK_TEST_CALL_LOG:?}"
 
 out=""
+url=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -o)
@@ -217,12 +218,24 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     *)
+      url="$1"
       shift
       ;;
   esac
 done
 
 if [ -z "$out" ]; then
+  if [[ "$url" == *"api.fxtwitter.com"* ]] && [ "${XTK_TEST_FAIL_FX:-0}" = "1" ]; then
+    printf '\n__HTTP_STATUS__:500\n'
+    exit 0
+  fi
+  if [[ "$url" == *"syndication.twitter.com"* ]]; then
+    cat <<'HTML'
+<html><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"timeline":{"entries":[{"type":"tweet","content":{"tweet":{"id_str":"2063297533732962729","created_at":"2026-06-06T16:30:40.000Z","full_text":"EdgeWallet syndication fallback post"}}}]}}}}</script></html>
+HTML
+    printf '\n__HTTP_STATUS__:200\n'
+    exit 0
+  fi
   if [ "${XTK_TEST_CURL_HTTP_CODE:-200}" = "200" ]; then
     cat <<'JSON'
 {"results":[{"type":"status","id":"2063297533732962729","created_at":"2026-06-06T16:30:40.000Z","raw_text":{"text":"EdgeWallet test post"},"author":{"screen_name":"edgewallet"},"url":"https://x.com/EdgeWallet/status/2063297533732962729"}]}
@@ -490,6 +503,25 @@ case_expected_user_mismatch_fails() {
   rm -rf "$dir"
 }
 
+case_peeper_fx_falls_back_to_syndication() {
+  local dir
+  dir="$(new_case_dir)"
+  env \
+    PATH="$dir/bin:$REAL_PATH" \
+    XTK_TEST_CALL_LOG="$dir/calls.log" \
+    XTK_TEST_FAIL_FX=1 \
+    node "$ROOT/skills/x-twitter-kit/scripts/peeper.mjs" \
+      --handle edgewallet \
+      --cache "$dir/peeper-cache.json" \
+      --limit 1 \
+      --json >"$dir/out" 2>&1
+  assert_contains "$dir/out" '"sourceKind": "syndication"' "peeper fx fallback source kind"
+  assert_contains "$dir/out" '"fallbackFrom": "fx"' "peeper records fx fallback"
+  assert_contains "$dir/out" '"xApiUsed": false' "peeper fallback avoids x api"
+  assert_contains "$dir/out" '"xAiUsed": false' "peeper fallback avoids xai"
+  rm -rf "$dir"
+}
+
 printf '== offline doctor capability tests ==\n'
 case_oauth_primary_skip_live
 TESTS_RUN=$((TESTS_RUN+1))
@@ -514,6 +546,8 @@ TESTS_RUN=$((TESTS_RUN+1))
 case_direct_bearer_http_failure
 TESTS_RUN=$((TESTS_RUN+1))
 case_api_key_fallback_does_not_leak_secret
+TESTS_RUN=$((TESTS_RUN+1))
+case_peeper_fx_falls_back_to_syndication
 TESTS_RUN=$((TESTS_RUN+1))
 
 printf 'PASS %d test cases\n' "$TESTS_RUN"
