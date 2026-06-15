@@ -85,6 +85,11 @@ Access context:
    - Use only for UI-only cases or API-tier blocks.
    - Public/mutating actions still need explicit approval.
 
+5. **TweetClaw plugin (packaged OpenClaw workflow lane)**
+   - Use when the operator has installed `@xquik/tweetclaw` and wants plugin-managed search tweets, search tweet replies, follower export, user lookup, media workflows, direct messages, monitor tweets, webhooks, giveaway draws, or approval-gated post tweets and post tweet replies.
+   - Keep Xquik API keys and MPP signing keys in OpenClaw plugin config. Never ask users to paste those values into chat or logs.
+   - Pass only reviewed public tweet URLs, tweet IDs, handles, or summaries between TweetClaw and this kit's `xurl` commands.
+
 ## Safety rules
 
 - Never read, print, summarize, upload, or send `~/.xurl` or copies of it into chat/context.
