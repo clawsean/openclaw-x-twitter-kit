@@ -45,6 +45,16 @@ primary public source -> alternate public source -> stale local cache -> authent
 In this repo, Peeper's default `fx` source follows that shape by falling back to
 the public syndication source and then to stale cache before failure.
 
+## Design Note: Peeper-First Routing
+
+For known public accounts, consider Peeper-first routing before escalating to
+X API, Grok, xAI, or browser automation. Fetch public profile and post context
+cheaply first, then escalate only when the cheaper path is missing data,
+requires authenticated account context, or needs deeper interpretation.
+
+This keeps the kit's broader vision intact while making API spend, credential
+exposure, and operational risk proportional to the job.
+
 ## Local Defaults
 
 Workspace-specific defaults belong in a local, untracked `LOCAL_DEFAULTS.md`.
